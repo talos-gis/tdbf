@@ -50,6 +50,7 @@ V6.9.3 (paulenandrew)
 - maintain record number order within index entries with the same key
 - update FCachedSize when adding backlink to FoxPro file
 - ensure consistent behaviour when normalizing index name
+- do not assume MDX page size is 1024 or block size is 512
 
 ------------------------
 V6.9.2

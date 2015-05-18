@@ -1842,6 +1842,8 @@ begin
           FIndexVersion := xBaseIV;
         end;
       end;
+      RecordSize := PMdxHdr(Header)^.BlockAdder;
+      PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
       case FIndexVersion of
         xBaseVII:
           begin
