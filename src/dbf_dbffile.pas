@@ -290,13 +290,12 @@ end;
 {$else SUPPORT_FORMATSETTINGSTYPE}
 procedure FloatToDbfStr(const Val: Extended; const Size, Precision: Integer; const Dest: PAnsiChar);
 var
-  Buffer: array[0..63] of char;
-  B : PAnsiChar;
-  s : AnsiString;
+  Buffer: array[0..63] of AnsiChar;
   resLen: Integer;
+  iPos: PAnsiChar;
 begin
   // convert to temporary buffer
-  resLen := dbfFloatToText(PWideChar(@Buffer[0]), Val, {$ifndef FPC_VERSION}fvExtended,{$endif} ffFixed, Size, Precision);
+  resLen := dbfFloatToText(PAnsiChar(@Buffer), Val, {$ifndef FPC_VERSION}fvExtended,{$endif} ffFixed, Size, Precision);
   // prevent overflow in destination buffer
   if resLen > Size then
     resLen := Size;
@@ -305,7 +304,7 @@ begin
   // we only have to convert if decimal separator different
   if DecimalSeparator <> sDBF_DEC_SEP then
   begin
-    iPos := dbfStrScan(PAnsiChar(@Buffer[0]), AnsiChar(DecimalSeparator));
+    iPos := dbfStrScan(PAnsiChar(@Buffer), AnsiChar(DecimalSeparator));
     if iPos <> nil then
       iPos^ := sDBF_DEC_SEP;
   end;
