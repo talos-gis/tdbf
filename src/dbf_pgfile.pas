@@ -27,8 +27,8 @@ type
   // - readonly                 open
   //
   // - memory            -*-share: N/A          -*-locks: disabled    -*-indexes: read/write
-  // - exclusive_create  -*-share: deny write   -*-locks: disabled    -*-indexes: read/write
-  // - exclusive_open    -*-share: deny write   -*-locks: disabled    -*-indexes: read/write
+  // - exclusive_create  -*-share: exclusive    -*-locks: disabled    -*-indexes: read/write
+  // - exclusive_open    -*-share: exclusive    -*-locks: disabled    -*-indexes: read/write
   // - readwrite_create  -*-share: deny none    -*-locks: enabled     -*-indexes: read/write
   // - readwrite_open    -*-share: deny none    -*-locks: enabled     -*-indexes: read/write
   // - readonly          -*-share: deny none    -*-locks: disabled    -*-indexes: readonly
@@ -232,8 +232,8 @@ begin
     end;
     // specify open mode
     case FMode of
-      pfExclusiveCreate: fileOpenMode := fmOpenReadWrite or fmShareDenyWrite;
-      pfExclusiveOpen:   fileOpenMode := fmOpenReadWrite or fmShareDenyWrite;
+      pfExclusiveCreate: fileOpenMode := fmOpenReadWrite or fmShareExclusive;
+      pfExclusiveOpen:   fileOpenMode := fmOpenReadWrite or fmShareExclusive;
       pfReadWriteCreate: fileOpenMode := fmOpenReadWrite or fmShareDenyNone;
       pfReadWriteOpen:   fileOpenMode := fmOpenReadWrite or fmShareDenyNone;
     else    // => readonly
