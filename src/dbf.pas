@@ -666,7 +666,7 @@ begin
   FInCopyFrom := false;
   FFindRecordFilter := false;
   FEditingRecNo := -1;
-  FTableLevel := 4;
+  FTableLevel := 5;
   FIndexName := EmptyStr;
   FilePath := EmptyStr;
   FTempBuffer := nil;

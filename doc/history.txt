@@ -46,6 +46,7 @@ V6.9.3 (paulenandrew)
 - update references to record number when inserting a record
 - when setting IndexName, do not resync index unless it changed
 - fix error when opening a table leaving it in an intermediate state
+- changed the default TableLevel from 4 to 5, supports a much larger record size and is otherwise almost identical
 
 ------------------------
 V6.9.2

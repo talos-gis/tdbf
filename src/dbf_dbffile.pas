@@ -410,7 +410,7 @@ begin
           if LanguageID = 0 then
             FDbfVersion := xBaseIII
           else
-            FDbfVersion := xBaseIV;
+            FDbfVersion := xBaseV;
         $04:
           FDbfVersion := xBaseVII;
         $02, $05:
