@@ -773,7 +773,10 @@ begin
       the file is not associated with a database. Therefore, database files always 
       contain 0x00. }
     if FDbfVersion = xFoxPro then
+    begin
       Inc(PDbfHdr(Header)^.FullHdrSize, 263);
+      Inc(FCachedSize, 263);
+    end;
 
     // write dbf header to disk
     inherited WriteHeader;
