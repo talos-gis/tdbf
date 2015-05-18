@@ -1213,138 +1213,143 @@ var
 begin
   // close current file
   FreeAndNil(FDbfFile);
-
-  // does file not exist? -> create
-  if ((FStorage = stoFile) and 
-        not FileExists(FAbsolutePath + FTableName) and 
-        (FOpenMode in [omAutoCreate, omTemporary])) or
-     ((FStorage = stoMemory) and (FUserStream = nil)) then
-  begin
-    doCreate := true;
-    if Assigned(FBeforeAutoCreate) then
-      FBeforeAutoCreate(Self, doCreate);
-    if doCreate then
-      CreateTable
-    else
-      exit;
-  end;
-
-  // now we know for sure the file exists
-  InitDbfFile(DbfOpenMode[FReadOnly, FExclusive]);
-  FDbfFile.Open;
-
-  // fail open?
-{$ifndef FPC}  
-  if FDbfFile.ForceClose then
-    Abort;
-{$endif}    
-
-  // determine dbf version
-  case FDbfFile.DbfVersion of
-    xBaseIII: FTableLevel := 3;
-    xBaseIV:  FTableLevel := 4;
-    xBaseVII: FTableLevel := 7;
-    xFoxPro:  FTableLevel := TDBF_TABLELEVEL_FOXPRO;
-  end;
-  // 11.09.2007 Есди 0, например DBaseIII, будем считать из DbfGlobals
-  if FDbfFile.LanguageID=0 then  begin
-    FDbfFile.UseCodePage := DbfGlobals.DefaultCreateCodePage; // GETACPOEM;
-    FDbfFile.FileLangId := DbfGlobals.DefaultCreateLangId;     // DbfLangId_RUS_866
-  end;
-  // Реальный locale из заголовка файла
-  FLanguageID := FDbfFile.LanguageID;
-
-
-  // build VCL fielddef list from native DBF FieldDefs
-(*
-  if (FDbfFile.HeaderSize = 0) or (FDbfFile.FieldDefs.Count = 0) then
-  begin
-    if FieldDefs.Count > 0 then
-    begin
-      CreateTableFromFieldDefs;
-    end else begin
-      CreateTableFromFields;
-    end;
-  end else begin
-*)
-//    GetFieldDefsFromDbfFieldDefs;
-//  end;
-
-{$ifdef SUPPORT_FIELDDEFS_UPDATED}
-  FieldDefs.Updated := False;
-  FieldDefs.Update;
-{$else}
-  InternalInitFieldDefs;
-{$endif}
-
-  // create the fields dynamically
-  if DefaultFields then
-    CreateFields; // Create fields from fielddefs.
-
-  BindFields(true);
-
-  // create array of blobstreams to store memo's in. each field is a possible blob
-  FBlobStreams := AllocMem(FieldDefs.Count * SizeOf(TDbfBlobStream));
-
-  // check codepage settings
-  DetermineTranslationMode;
-  if FTranslationMode = tmNoneAvailable then
-  begin
-    // no codepage available? ask user
-    LanguageAction := laReadOnly;
-    if Assigned(FOnLanguageWarning) then
-      FOnLanguageWarning(Self, LanguageAction);
-    case LanguageAction of
-      laReadOnly: FTranslationMode := tmNoneAvailable;
-      laForceOEM:
-        begin
-          FDbfFile.UseCodePage := GetOEMCP;
-          FTranslationMode := tmSimple;
-        end;
-      laForceANSI:
-        begin
-          FDbfFile.UseCodePage := GetACP;
-          FTranslationMode := tmNoneNeeded;
-        end;
-      laDefault:
-        begin
-          FDbfFile.UseCodePage := DbfGlobals.DefaultOpenCodePage;
-          DetermineTranslationMode;
-        end;
-    end;
-  end;
-
-  // allocate a record buffer for temporary data
-  FTempBuffer := AllocRecordBuffer;
-
-  // open indexes
-  for I := 0 to FIndexDefs.Count - 1 do
-  begin
-    lIndex := FIndexDefs.Items[I];
-    lIndexName := ParseIndexName(lIndex.IndexFile);
-    // if index does not exist -> create, if it does exist -> open only
-    FDbfFile.OpenIndex(lIndexName, lIndex.SortField, false, lIndex.Options);
-  end;
-
-  // parse filter expression
   try
-    ParseFilter(Filter);
+
+    // does file not exist? -> create
+    if ((FStorage = stoFile) and
+          not FileExists(FAbsolutePath + FTableName) and
+          (FOpenMode in [omAutoCreate, omTemporary])) or
+       ((FStorage = stoMemory) and (FUserStream = nil)) then
+    begin
+      doCreate := true;
+      if Assigned(FBeforeAutoCreate) then
+        FBeforeAutoCreate(Self, doCreate);
+      if doCreate then
+        CreateTable
+      else
+        exit;
+    end;
+
+    // now we know for sure the file exists
+    InitDbfFile(DbfOpenMode[FReadOnly, FExclusive]);
+    FDbfFile.Open;
+
+    // fail open?
+  {$ifndef FPC}
+    if FDbfFile.ForceClose then
+      Abort;
+  {$endif}
+
+    // determine dbf version
+    case FDbfFile.DbfVersion of
+      xBaseIII: FTableLevel := 3;
+      xBaseIV:  FTableLevel := 4;
+      xBaseVII: FTableLevel := 7;
+      xFoxPro:  FTableLevel := TDBF_TABLELEVEL_FOXPRO;
+    end;
+    // 11.09.2007 Есди 0, например DBaseIII, будем считать из DbfGlobals
+    if FDbfFile.LanguageID=0 then  begin
+      FDbfFile.UseCodePage := DbfGlobals.DefaultCreateCodePage; // GETACPOEM;
+      FDbfFile.FileLangId := DbfGlobals.DefaultCreateLangId;     // DbfLangId_RUS_866
+    end;
+    // Реальный locale из заголовка файла
+    FLanguageID := FDbfFile.LanguageID;
+
+
+    // build VCL fielddef list from native DBF FieldDefs
+  (*
+    if (FDbfFile.HeaderSize = 0) or (FDbfFile.FieldDefs.Count = 0) then
+    begin
+      if FieldDefs.Count > 0 then
+      begin
+        CreateTableFromFieldDefs;
+      end else begin
+        CreateTableFromFields;
+      end;
+    end else begin
+  *)
+  //    GetFieldDefsFromDbfFieldDefs;
+  //  end;
+
+  {$ifdef SUPPORT_FIELDDEFS_UPDATED}
+    FieldDefs.Updated := False;
+    FieldDefs.Update;
+  {$else}
+    InternalInitFieldDefs;
+  {$endif}
+
+    // create the fields dynamically
+    if DefaultFields then
+      CreateFields; // Create fields from fielddefs.
+
+    BindFields(true);
+
+    // create array of blobstreams to store memo's in. each field is a possible blob
+    FBlobStreams := AllocMem(FieldDefs.Count * SizeOf(TDbfBlobStream));
+
+    // check codepage settings
+    DetermineTranslationMode;
+    if FTranslationMode = tmNoneAvailable then
+    begin
+      // no codepage available? ask user
+      LanguageAction := laReadOnly;
+      if Assigned(FOnLanguageWarning) then
+        FOnLanguageWarning(Self, LanguageAction);
+      case LanguageAction of
+        laReadOnly: FTranslationMode := tmNoneAvailable;
+        laForceOEM:
+          begin
+            FDbfFile.UseCodePage := GetOEMCP;
+            FTranslationMode := tmSimple;
+          end;
+        laForceANSI:
+          begin
+            FDbfFile.UseCodePage := GetACP;
+            FTranslationMode := tmNoneNeeded;
+          end;
+        laDefault:
+          begin
+            FDbfFile.UseCodePage := DbfGlobals.DefaultOpenCodePage;
+            DetermineTranslationMode;
+          end;
+      end;
+    end;
+
+    // allocate a record buffer for temporary data
+    FTempBuffer := AllocRecordBuffer;
+
+    // open indexes
+    for I := 0 to FIndexDefs.Count - 1 do
+    begin
+      lIndex := FIndexDefs.Items[I];
+      lIndexName := ParseIndexName(lIndex.IndexFile);
+      // if index does not exist -> create, if it does exist -> open only
+      FDbfFile.OpenIndex(lIndexName, lIndex.SortField, false, lIndex.Options);
+    end;
+
+    // parse filter expression
+    try
+      ParseFilter(Filter);
+    except
+      // oops, a problem with parsing, clear filter for now
+      on E: EDbfError do Filter := EmptyStr;
+    end;
+
+    SetIndexName(FIndexName);
+
+  // SetIndexName will have made the cursor for us if no index selected :-)
+  //  if FCursor = nil then FCursor := TDbfCursor.Create(FDbfFile);
+
+    if FMasterLink.Active and Assigned(FIndexFile) then
+      CheckMasterRange;
+    InternalFirst;
+
+  //  FDbfFile.SetIndex(FIndexName);
+  //  FDbfFile.FIsCursorOpen := true;
   except
-    // oops, a problem with parsing, clear filter for now
-    on E: EDbfError do Filter := EmptyStr;
+    InternalClose;
+    raise;
   end;
-
-  SetIndexName(FIndexName);
-
-// SetIndexName will have made the cursor for us if no index selected :-)
-//  if FCursor = nil then FCursor := TDbfCursor.Create(FDbfFile);
-
-  if FMasterLink.Active and Assigned(FIndexFile) then
-    CheckMasterRange;
-  InternalFirst;
-
-//  FDbfFile.SetIndex(FIndexName);
-//  FDbfFile.FIsCursorOpen := true;
 end;
 
 function TDbf.GetCodePage: Cardinal;

@@ -45,6 +45,7 @@ V6.9.3 (paulenandrew)
 - fix exception inserting into index leaving page locked
 - update references to record number when inserting a record
 - when setting IndexName, do not resync index unless it changed
+- fix error when opening a table leaving it in an intermediate state
 
 ------------------------
 V6.9.2
