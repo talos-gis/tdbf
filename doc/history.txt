@@ -33,6 +33,10 @@ BUGS & WARNINGS
 
 
 ------------------------
+V6.9.3 (paulenandrew)
+- fix compiler errors in dbf_ansistrings for Free Pascal
+
+------------------------
 V6.9.2
 
 - compile fixes for delphi 4, 5 (pdouble)
