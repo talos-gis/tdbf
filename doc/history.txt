@@ -43,6 +43,7 @@ V6.9.3 (paulenandrew)
 - only lock a record if the table is shared
 - fix memo file not being maintained correctly if block size is not the default of 1024
 - fix exception inserting into index leaving page locked
+- update references to record number when inserting a record
 
 ------------------------
 V6.9.2

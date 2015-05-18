@@ -1421,7 +1421,12 @@ begin
     // insert
     newRecord := FDbfFile.Insert(@pRecord^.DeletedFlag);
     if newRecord > 0 then
+    begin
       FCursor.PhysicalRecNo := newRecord;
+      pRecord^.BookmarkData.PhysicalRecNo := newRecord;
+      pRecord^.BookmarkFlag := bfCurrent;
+      pRecord^.SequentialRecNo := FCursor.SequentialRecNo;
+    end;
   end;
   // set flag that TDataSet is about to post...so we can disable resync
   FPosting := true;
