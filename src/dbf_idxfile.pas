@@ -882,6 +882,8 @@ begin
     FEntry := GetEntry(current);
     // calc diff
     Result := MatchKey;
+    if (Result = 0) and (ARecNo = -3) then
+      Result := FIndexFile.FUserRecNo - GetRecNo;
     // test if we need to go lower or higher
     // result < 0 implies key smaller than tested entry
     // result = 0 implies key equal to tested entry
