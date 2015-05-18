@@ -51,6 +51,7 @@ V6.9.3 (paulenandrew)
 - update FCachedSize when adding backlink to FoxPro file
 - ensure consistent behaviour when normalizing index name
 - do not assume MDX page size is 1024 or block size is 512
+- fix memory leak if error opening an index
 
 ------------------------
 V6.9.2

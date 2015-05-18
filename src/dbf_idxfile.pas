@@ -1959,37 +1959,34 @@ procedure TIndexFile.Close;
 var
   I: Integer;
 begin
+  // save headers
   if FOpened then
-  begin
-    // save headers
     Flush;
 
-    // remove parser reference
-    FCurrentParser := nil;
+  // remove parser reference
+  FCurrentParser := nil;
 
-    // free roots
+  // free roots
+  for I := 0 to MaxIndexes - 1 do
+  begin
     if FIndexVersion >= xBaseIV then
-    begin
-      for I := 0 to MaxIndexes - 1 do
-      begin
-        FreeMemAndNil(FIndexHeaders[I]);
-        FreeAndNil(FParsers[I]);
-        FreeAndNil(FRoots[I]);
-      end;
-    end else begin
-      FreeAndNil(FRoot);
-    end;
-
-    // free mem
-    FMdxTag.Free;
-    FTempMdxTag.Free;
-
-    // close physical file
-    CloseFile;
-
-    // not opened any more
-    FOpened := false;
+      FreeMemAndNil(FIndexHeaders[I]);
+    FreeAndNil(FParsers[I]);
+    FreeAndNil(FRoots[I]);
   end;
+  FRoot := nil;
+
+  // free mem
+  FMdxTag.Free;
+  FMdxTag := nil;
+  FTempMdxTag.Free;
+  fTempMdxTag := nil;
+
+  // close physical file
+  CloseFile;
+
+  // not opened any more
+  FOpened := false;
 end;
 
 procedure TIndexFile.ClearRoots;
