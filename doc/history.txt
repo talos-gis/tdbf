@@ -53,6 +53,7 @@ V6.9.3 (paulenandrew)
 - do not assume MDX page size is 1024 or block size is 512
 - fix memory leak if error opening an index
 - preserve deleted flag in TDbf.CopyFrom
+- if a memo field is set to an empty value, clear the reference so that it is null (consistent with BDE)
 
 ------------------------
 V6.9.2

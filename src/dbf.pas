@@ -580,6 +580,7 @@ end;
 procedure TDbfBlobStream.Commit;
 var
   Dbf: TDbf;
+  Src: Pointer;
 begin
   if FDirty then
   begin
@@ -587,7 +588,11 @@ begin
     Dbf := TDbf(FBlobField.DataSet);
     Translate(true);
     Dbf.FDbfFile.MemoFile.WriteMemo(FMemoRecNo, FReadSize, Self);
-    Dbf.FDbfFile.SetFieldData(FBlobField.FieldNo-1, ftInteger, @FMemoRecNo,
+    if Size <> 0 then
+      Src := @FMemoRecNo
+    else
+      Src := nil;
+    Dbf.FDbfFile.SetFieldData(FBlobField.FieldNo-1, ftInteger, Src,
       @pDbfRecord(TDbf(FBlobField.DataSet).ActiveBuffer)^.DeletedFlag, false);
     FDirty := false;
   end;
