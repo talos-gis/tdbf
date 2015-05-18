@@ -24,6 +24,7 @@ initialization
   STRING_INVALID_FIELD_TYPE           := 'Ungültiger Feldtyp ''%s'' für das Feld ''%s''.';
   STRING_INVALID_VCL_FIELD_TYPE       := 'Feld "%s" kann nicht erzeugt werden: VCL-Feldtyp %x wird nicht von DBF unterstützt.';
 
+  STRING_INVALID_MDX_FILE             := 'Ungültige MDX-Datei.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Index basiert auf unbekanntem Feld "%s".';
   STRING_INDEX_BASED_ON_INVALID_FIELD := 'Feld "%s" hat ungültigen Feldtyp für einen Index.';
   STRING_INDEX_EXPRESSION_TOO_LONG    := 'Das Ergebnis des Index-Ausdrucks "%s" ist zu lang, >100 Zeichen (%d).';

@@ -24,6 +24,7 @@ initialization
   STRING_INVALID_VCL_FIELD_TYPE       := 'Nie mogê tworzyæ pola "%s", typ pola VCL %x nie wspierany przez DBF.';
 
 
+  STRING_INVALID_MDX_FILE             := 'Uszkodzony plik bazy.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Kluczowe pole indeksu "%s" nie istnieje';
   STRING_INDEX_BASED_ON_INVALID_FIELD := 'Typ pola "%s" niedozwolony dla indeksów';
   STRING_INDEX_EXPRESSION_TOO_LONG    := 'Zbyt d³ugi wynik "%s", >100 znaków (%d).';

@@ -16,6 +16,7 @@ var
   STRING_INVALID_FIELD_COUNT: string;
   STRING_INVALID_FIELD_TYPE: string;
 
+  STRING_INVALID_MDX_FILE: string;
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD: string;
   STRING_INDEX_BASED_ON_INVALID_FIELD: string;
   STRING_INDEX_EXPRESSION_TOO_LONG: string;
@@ -42,6 +43,7 @@ initialization
   STRING_INVALID_FIELD_TYPE           := 'Type de champ ''%s'' invalide pour le champ %s.';
   STRING_INVALID_VCL_FIELD_TYPE       := 'Impossible de créer le champ "%s", champ type %x VCL non supporté par DBF';
 
+  STRING_INVALID_MDX_FILE             := 'Fichier MDX invalide.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Index basé sur un champ inconnu %s';
   STRING_INDEX_BASED_ON_INVALID_FIELD := 'Impossible de contruire un index sur ce type de champ "%s"';
   STRING_INDEX_EXPRESSION_TOO_LONG    := 'Résultat d''Index trop long pour "%s", >100 caractères (%d).';

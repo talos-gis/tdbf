@@ -19,6 +19,7 @@ initialization
   STRING_FIELD_TOO_LONG               := 'Valore troppo elevato: %d caratteri (esso non può essere più di %d).';
   STRING_INVALID_FIELD_COUNT          := 'Campo non valido (count): %d (deve essere tra 1 e 4095).';
 
+  STRING_INVALID_MDX_FILE             := 'File MDX non valido.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Indice basato su un campo sconosciuto "%s"';
   STRING_INDEX_BASED_ON_INVALID_FIELD := 'Campo "%s" è di tipo non valido per un indice';
   STRING_INVALID_INDEX_TYPE           := 'Tipo indice non valido: Può essere solo string o float';

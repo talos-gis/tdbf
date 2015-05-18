@@ -23,6 +23,7 @@ initialization
   STRING_INVALID_FIELD_TYPE           := 'Veldtype ''%s'' is ongeldig voor veld ''%s''.';
   STRING_INVALID_VCL_FIELD_TYPE       := 'Veld "%s": VCL veldtype %x wordt niet ondersteund door DBF.';
 
+  STRING_INVALID_MDX_FILE             := 'Ongeldig MDX bestand.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Index gebaseerd op onbekend veld "%s".';
   STRING_INDEX_BASED_ON_INVALID_FIELD := 'Veld "%s" heeft een ongeldig veldtype om index op te baseren.';
   STRING_INDEX_EXPRESSION_TOO_LONG    := 'Index expressie resultaat "%s" is te lang, >100 karakters (%d).';
