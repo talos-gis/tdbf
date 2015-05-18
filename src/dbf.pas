@@ -2775,10 +2775,10 @@ end;
 
 procedure TDbf.ExtractKey(KeyBuffer: PAnsiChar);
 begin
-  if FIndexFile <> nil then
-    dbfStrCopy(FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer), KeyBuffer)
+  if FCursor is TIndexCursor then
+    TIndexCursor(FCursor).IndexFile.ExtractKey(KeyBuffer)
   else
-    KeyBuffer[0] := #0;
+    KeyBuffer^ := #0;
 end;
 
 function TDbf.CompareKeys(Key1, Key2: PAnsiChar): Integer;

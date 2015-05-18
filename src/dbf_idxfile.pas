@@ -350,6 +350,7 @@ type
 
     procedure CreateIndex(FieldDesc, TagName: string; Options: TIndexOptions);
     function  ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
+    procedure ExtractKey(Key: PAnsiChar);
     function  SearchKey(Key: PAnsiChar; SearchType: TSearchKeyType): Boolean;
     function  Find(RecNo: Integer; Buffer: PAnsiChar): Integer;
     function  IndexOf(const AIndexName: string): Integer;
@@ -2990,6 +2991,11 @@ begin
   Result := PAnsiChar(PrepareKey(TDbfRecordBuffer(FCurrentParser.ExtractFromBuffer(PAnsiChar(Buffer))), FCurrentParser.ResultType));
   if not FCurrentParser.RawStringFields then
     TranslateString(GetACP, FCodePage, Result, Result, KeyLen);
+end;
+
+procedure TIndexFile.ExtractKey(Key: PAnsiChar);
+begin
+  Move(FLeaf.Key^, Key^, KeyLen);
 end;
 
 function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}): boolean;
