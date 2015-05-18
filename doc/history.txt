@@ -55,6 +55,7 @@ V6.9.3 (paulenandrew)
 - preserve deleted flag in TDbf.CopyFrom
 - if a memo field is set to an empty value, clear the reference so that it is null (consistent with BDE)
 - Add support for SetKey, GotoKey and GotoNearest
+- Maintain IndexDefs when DeleteIndex is used to delete an index
 
 ------------------------
 V6.9.2

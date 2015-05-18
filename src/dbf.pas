@@ -1096,6 +1096,7 @@ var
   TempFieldDef: TDbfFieldDef;
   TempMdxFile: TIndexFile;
   BaseName, lIndexName: string;
+  lIndexDef: TDbfIndexDef;
 begin
   FieldDefs.Clear;
 
@@ -1140,6 +1141,12 @@ begin
     if FDbfFile.IndexNames.Objects[I] = TempMdxFile then
       if FIndexDefs.GetIndexByName(lIndexName) = nil then
         TempMdxFile.GetIndexInfo(lIndexName, FIndexDefs.Add);
+  end;
+  for I := Pred(FIndexDefs.Count) downto 0 do
+  begin
+    lIndexDef := FIndexDefs[I];
+    if FDbfFile.IndexNames.IndexOf(lIndexDef.IndexFile) < 0 then
+      lIndexDef.Free;
   end;
 end;
 
