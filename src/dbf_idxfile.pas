@@ -3871,10 +3871,8 @@ begin
     begin
       if TryStrToDate(Key1, Key1Val) and TryStrToDate(Key2, Key2Val) then
       begin
-        Key1Val := StrToDate(Key1);
-        Key2Val := StrToDate(Key2);
         if Key1Val > Key2Val then
-          result := 1 else
+          Result := 1 else
         if Key1Val < Key2Val then
           Result := -1
         else
@@ -3895,12 +3893,11 @@ begin
   end;
 end;
 
-// See http://www.dbase.com/knowledgebase/int/db7_file_fmt.htm
 function TIndexFile.CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
 var
   Date1, Date2: TDateTime;
 
-  function GetDateTime(Key: pchar): TDateTime;
+  function GetVal(Key: pchar): TDateTime;
   var
     Temp: packed array[0..7] of char;
   begin
@@ -3913,8 +3910,8 @@ var
   end;
 
 begin
-  Date1 := GetDateTime(Key1);
-  Date2 := GetDateTime(Key2);
+  Date1 := GetVal(Key1);
+  Date2 := GetVal(Key2);
   if Date1 > Date2 then Result := 1 else
   if Date1 < Date2 then Result := -1
   else Result := 0;
