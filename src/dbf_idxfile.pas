@@ -1974,7 +1974,6 @@ begin
     FreeAndNil(FParsers[I]);
     FreeAndNil(FRoots[I]);
   end;
-  FRoot := nil;
 
   // free mem
   FMdxTag.Free;

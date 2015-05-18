@@ -195,6 +195,12 @@ type
     FOnCompareRecord: TNotifyEvent;
     FOnCopyDateTimeAsString: TConvertFieldEvent;
 
+    FKeyBufferLen: Integer;
+    FKeyBuffer: Pointer;
+    function GetKeyBuffer: PAnsiChar;
+    function InitKeyBuffer(Buffer: PAnsiChar): PAnsiChar;
+    procedure PostKeyBuffer(Commit: Boolean);
+
     function GetIndexName: string;
     function GetVersion: string;
     function GetPhysicalRecNo: Integer;
@@ -292,6 +298,13 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+
+    procedure SetKey;
+    function  GotoCommon(SearchKeyType: TSearchKeyType): Boolean;
+    procedure GotoNearest;
+    function  GotoKey: Boolean;
+    procedure Cancel; override;
+    procedure Post; override;
 
     { abstract methods }
 
@@ -695,6 +708,8 @@ begin
     FIndexDefs.Free;
   end;
   FMasterLink.Free;
+
+  FreeMemAndNil(FKeyBuffer);
 end;
 
 function TDbf.AllocRecordBuffer: TDbfRecordBuffer; {override virtual abstract from TDataset}
@@ -722,7 +737,7 @@ begin
   case State of
     dsFilter:     Result := TDbfRecordBuffer(FFilterBuffer);
     dsCalcFields: Result := TDbfRecordBuffer(CalcBuffer);
-//    dsSetKey:     Result := FKeyBuffer;     // TO BE Implemented
+    dsSetKey:     Result := GetKeyBuffer;
   else
     if IsEmpty then
     begin
@@ -807,6 +822,10 @@ var
 begin
   if (Field.FieldNo >= 0) then
   begin
+    if State = dsSetKey then
+      Dst := @PDbfRecord(GetKeyBuffer)^.DeletedFlag
+    else
+      Dst := @PDbfRecord(ActiveBuffer)^.DeletedFlag;
     Dst := @PDbfRecord(ActiveBuffer)^.DeletedFlag;
     FDbfFile.SetFieldData(Field.FieldNo - 1, Field.DataType, Buffer, Dst, NativeFormat);
   end else begin    { ***** fkCalculated, fkLookup ***** }
@@ -2974,6 +2993,113 @@ end;
 procedure TDbf.SetMasterFields(const Value: string);
 begin
   FMasterLink.FieldNames := Value;
+end;
+
+function TDbf.GetKeyBuffer: PAnsiChar;
+var
+  Len: Integer;
+begin
+  Len := SizeOf(TDbfRecordHeader) + RecordSize;
+  if (FKeyBuffer = nil) then
+    GetMem(FKeyBuffer, Len)
+  else
+    if Len <> FKeyBufferLen then
+      ReAllocMem(FKeyBuffer, Len);
+  FKeyBufferLen := Len;
+  Result := PAnsiChar(FKeyBuffer);
+end;
+
+function TDbf.InitKeyBuffer(Buffer: PAnsiChar): PAnsiChar;
+begin
+  FillChar(Buffer^, RecordSize, 0);
+  InitRecord(Buffer);
+  Result := Buffer;
+end;
+
+procedure TDbf.PostKeyBuffer(Commit: boolean);
+begin
+  DataEvent(deCheckBrowseMode, 0);
+  SetState(dsBrowse);
+  DataEvent(deDataSetChange, 0);
+end;
+
+function TDbf.GotoCommon(SearchKeyType: TSearchKeyType): Boolean;
+var
+  checkmatch: Boolean;
+  acceptable: boolean;
+  matchres: integer;
+  UserKey: pchar;
+begin
+  UserKey := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer);
+  Result  := FIndexFile.SearchKey(UserKey, SearchKeyType);
+  if not Result then
+    Exit;
+
+  checkmatch := False;
+  repeat
+    if ReadCurrentRecord(TempBuffer, acceptable) = grError then
+    begin
+      Result := False;
+      Exit;
+    end;
+    if acceptable then
+      break;
+    checkmatch := True;
+    FCursor.Next;
+  until False;
+
+  if checkmatch then
+  begin
+    matchres := TIndexCursor(FCursor).IndexFile.MatchKey(UserKey);
+    case SearchKeyType of
+      stEqual: Result := matchres = 0;
+      stGreaterEqual: Result := matchres >= 0;
+      stGreater: Result := matchres > 0;
+    end;
+  end;
+
+  CheckBrowseMode;
+  DoBeforeScroll;
+  CursorPosChanged;
+
+  if Result then
+  begin
+    Resync([rmExact, rmCenter]);
+    DoAfterScroll;
+  end;
+end;
+
+function TDbf.GotoKey: Boolean;
+begin
+  Result := GotoCommon(stEqual);
+end;
+
+procedure TDbf.GotoNearest;
+begin
+  GotoCommon(stGreaterEqual);
+end;
+
+procedure TDbf.SetKey;
+begin
+  CheckBrowseMode;
+  SetModified(true);
+  SetState(dsSetKey);
+  InitKeyBuffer(GetKeyBuffer);
+  DataEvent(deDataSetChange, 0);
+end;
+
+procedure TDbf.Cancel;
+begin
+  inherited Cancel;
+  if State = dsSetKey then
+    PostKeyBuffer(False);
+end;
+
+procedure TDbf.Post;
+begin
+  inherited Post;
+  if State = dsSetKey then
+    PostKeyBuffer(True);
 end;
 
 //==========================================================
