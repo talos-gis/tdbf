@@ -49,6 +49,7 @@ V6.9.3 (paulenandrew)
 - changed the default TableLevel from 4 to 5, supports a much larger record size and is otherwise almost identical
 - maintain record number order within index entries with the same key
 - update FCachedSize when adding backlink to FoxPro file
+- ensure consistent behaviour when normalizing index name
 
 ------------------------
 V6.9.2

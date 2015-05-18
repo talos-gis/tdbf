@@ -3001,11 +3001,13 @@ function TDbfIndexDefs.GetIndexByName(const Name: string): TDbfIndexDef;
 var
   I: Integer;
   lIndex: TDbfIndexDef;
+  lIndexName: string;
 begin
+  lIndexName := IndexNameNormalize(Name);
   for I := 0 to Count-1 do
   begin
     lIndex := Items[I];
-    if lIndex.IndexFile = Name then
+    if lIndex.IndexFile = lIndexName then
     begin
       Result := lIndex;
       exit;

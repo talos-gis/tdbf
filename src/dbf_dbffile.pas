@@ -2190,7 +2190,7 @@ begin
       tempExclusive := IsSharedAccess;
       if tempExclusive then TryExclusive;
       // always uppercase index expression
-      IndexField := AnsiUpperCase(IndexField);
+      IndexField := IndexNameNormalize(IndexField);
       try
         try
           // create index if asked

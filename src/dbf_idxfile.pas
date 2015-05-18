@@ -402,6 +402,8 @@ type
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
   end;
 
+function IndexNameNormalize(Value: string): string;
+
 //------------------------------------------------------------------------------
 implementation
 
@@ -412,6 +414,11 @@ uses
   dbf_str,
   dbf_prssupp,
   dbf_lang;
+
+function IndexNameNormalize(Value: string): string;
+begin
+  Result := AnsiUpperCase(Trim(Value));
+end;
 
 const
   RecBOF = 0;
@@ -2198,7 +2205,7 @@ begin
     FLeaf := FLeaves[tagNo];
     // create new tag
     FTempMdxTag.Tag := CalcTagOffset(tagNo);
-    FTempMdxTag.TagName := AnsiUpperCase(TagName);
+    FTempMdxTag.TagName := IndexNameNormalize(TagName);
     // if expression then calculate
     FTempMdxTag.KeyFormat := KeyFormat_Data;
     if ixExpression in Options then
@@ -4126,12 +4133,12 @@ end;
 
 procedure TDbfIndexDef.SetIndexName(NewName: string);
 begin
-  FIndexName := AnsiUpperCase(Trim(NewName));
+  FIndexName := IndexNameNormalize(NewName);
 end;
 
 procedure TDbfIndexDef.SetExpression(NewField: string);
 begin
-  FExpression := AnsiUpperCase(Trim(NewField));
+  FExpression := IndexNameNormalize(NewField);
 end;
 
 initialization
