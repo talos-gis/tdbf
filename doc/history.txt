@@ -41,6 +41,7 @@ V6.9.3 (paulenandrew)
 - prevent Access Violation in TDbf.IsDeleted if $booleval is on
 - use fmShareExclusive in exclusive create/open mode
 - only lock a record if the table is shared
+- fix memo file not being maintained correctly if block size is not the default of 1024
 
 ------------------------
 V6.9.2

@@ -182,6 +182,7 @@ begin
     end;
 
     RecordSize := GetBlockLen;
+    HeaderSize := GetBlockLen;
     // checking for right blocksize not needed for foxpro?
     // mod 128 <> 0 <-> and 0x7F <> 0
     if (RecordSize = 0) and ((FDbfVersion = xFoxPro) or ((RecordSize and $7F) <> 0)) then
