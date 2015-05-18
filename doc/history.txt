@@ -40,6 +40,7 @@ V6.9.3 (paulenandrew)
 - change TDbf.ExtractKey to extract key from index instead of evaluate it from record buffer
 - prevent Access Violation in TDbf.IsDeleted if $booleval is on
 - use fmShareExclusive in exclusive create/open mode
+- only lock a record if the table is shared
 
 ------------------------
 V6.9.2

@@ -2557,8 +2557,14 @@ begin
 end;
 
 procedure TDbfFile.LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
+var
+  Locked: Boolean;
 begin
-  if LockPage(RecNo, false) then
+  if NeedLocks then
+    Locked := LockPage(RecNo, false)
+  else
+    Locked := True;
+  if Locked then
   begin
     // reread data
     ReadRecord(RecNo, Buffer);
@@ -2603,7 +2609,8 @@ begin
   // write new record buffer, all keys ok
   WriteRecord(RecNo, Buffer);
   // done updating, unlock
-  UnlockPage(RecNo);
+  if NeedLocks then
+    UnlockPage(RecNo);
 end;
 
 procedure TDbfFile.RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
