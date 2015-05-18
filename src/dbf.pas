@@ -2687,10 +2687,7 @@ var
   src: PAnsiChar;
 begin
   src := PAnsiChar(GetCurrentBuffer);
-  if Assigned(src) then
-    Result := (src^ = '*')
-  else
-    Result := False;
+  IsDeleted := (src=nil) or (src^ = '*')
 end;
 
 procedure TDbf.Undelete;
