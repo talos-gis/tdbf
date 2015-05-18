@@ -358,6 +358,7 @@ type
       {$ifdef SUPPORT_DEFAULT_PARAMS}= false{$endif});
     function  GetCurrentBuffer: TDbfRecordBuffer;
     procedure ExtractKey(KeyBuffer: PAnsiChar);
+    function  CompareKeys(Key1, Key2: PAnsiChar): Integer;
     procedure UpdateIndexDefs; override;
     procedure GetFileNames(Strings: TStrings; Files: TDbfFileNames); {$ifdef SUPPORT_DEFAULT_PARAMS} overload; {$endif}
 {$ifdef SUPPORT_DEFAULT_PARAMS}
@@ -2778,6 +2779,14 @@ begin
     dbfStrCopy(FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer), KeyBuffer)
   else
     KeyBuffer[0] := #0;
+end;
+
+function TDbf.CompareKeys(Key1, Key2: PAnsiChar): Integer;
+begin
+  if FCursor is TIndexCursor then
+    Result := TIndexCursor(FCursor).IndexFile.CompareKeys(Key1, Key2)
+  else
+    Result := 0;
 end;
 
 function TDbf.GetKeySize: Integer;
