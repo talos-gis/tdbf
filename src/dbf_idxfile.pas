@@ -747,29 +747,32 @@ var
 begin
   // lock page if needed; wait if not available, anyone else updating?
   LockPage;
-  // check assertions
-  lNumEntries := GetNumEntries;
-  // if this is inner node, we can only store one less than max entries
-  numKeysAvail := SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.NumKeys) - lNumEntries;
-  if FLowerPage <> nil then
-    dec(numKeysAvail);
-  // check if free space
-  assert(numKeysAvail > 0);
-  // first free up some space
-  source := FEntry;
-  dest := GetEntry(FEntryNo + 1);
-  size := (lNumEntries - EntryNo) * SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.KeyRecLen);
-  // if 'rightmost' entry, copy pageno too
-  if (FLowerPage <> nil) or (numKeysAvail > 1) then
-    size := size + FIndexFile.EntryHeaderSize;
-  Move(source^, dest^, size);
-  // one entry added
-  Inc(FHighIndex);
-  IncNumEntries;
-  // lNumEntries not valid from here
-  SetEntry(RecNo, Buffer, LowerPageNo);
-  // done!
-  UnlockPage;
+  try
+    // check assertions
+    lNumEntries := GetNumEntries;
+    // if this is inner node, we can only store one less than max entries
+    numKeysAvail := SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.NumKeys) - lNumEntries;
+    if FLowerPage <> nil then
+      dec(numKeysAvail);
+    // check if free space
+    assert(numKeysAvail > 0);
+    // first free up some space
+    source := FEntry;
+    dest := GetEntry(FEntryNo + 1);
+    size := (lNumEntries - EntryNo) * SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.KeyRecLen);
+    // if 'rightmost' entry, copy pageno too
+    if (FLowerPage <> nil) or (numKeysAvail > 1) then
+      size := size + FIndexFile.EntryHeaderSize;
+    Move(source^, dest^, size);
+    // one entry added
+    Inc(FHighIndex);
+    IncNumEntries;
+    // lNumEntries not valid from here
+    SetEntry(RecNo, Buffer, LowerPageNo);
+    // done!
+  finally
+    UnlockPage;
+  end;
 end;
 
 procedure TIndexPage.LocalDelete;

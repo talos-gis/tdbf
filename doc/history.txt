@@ -42,6 +42,7 @@ V6.9.3 (paulenandrew)
 - use fmShareExclusive in exclusive create/open mode
 - only lock a record if the table is shared
 - fix memo file not being maintained correctly if block size is not the default of 1024
+- fix exception inserting into index leaving page locked
 
 ------------------------
 V6.9.2
