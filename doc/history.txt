@@ -38,6 +38,7 @@ V6.9.3 (paulenandrew)
 - fix compiler errors in dbf_dbffile for Free Pascal
 - expose TIndexFile.CompareKeys in TDbf.CompareKeys
 - change TDbf.ExtractKey to extract key from index instead of evaluate it from record buffer
+- prevent Access Violation in TDbf.IsDeleted if $booleval is on
 
 ------------------------
 V6.9.2
