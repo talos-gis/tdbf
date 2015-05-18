@@ -1708,6 +1708,9 @@ begin
         end;
       end;
       Post;
+      if DataSet is TDbf then
+        if TDbf(DataSet).IsDeleted then
+          Delete;
       DataSet.Next;
     end;
     Close;

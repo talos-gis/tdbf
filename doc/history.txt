@@ -52,6 +52,7 @@ V6.9.3 (paulenandrew)
 - ensure consistent behaviour when normalizing index name
 - do not assume MDX page size is 1024 or block size is 512
 - fix memory leak if error opening an index
+- preserve deleted flag in TDbf.CopyFrom
 
 ------------------------
 V6.9.2
