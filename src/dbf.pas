@@ -2463,42 +2463,45 @@ procedure TDbf.SetIndexName(AIndexName: string);
 var
   lRecNo: Integer;
 begin
-  FIndexName := AIndexName;
-  if FDbfFile = nil then
-    exit;
+  if (FIndexName <> AIndexName) or (not Assigned(FCursor)) then
+  begin
+    FIndexName := AIndexName;
+    if FDbfFile = nil then
+      exit;
 
-  // get accompanying index file
-  AIndexName := ParseIndexName(Trim(AIndexName));
-  FIndexFile := FDbfFile.GetIndexByName(AIndexName);
-  // store current lRecNo
-  if FCursor = nil then
-  begin
-    lRecNo := 1;
-  end else begin
-    UpdateCursorPos;
-    lRecNo := FCursor.PhysicalRecNo;
+    // get accompanying index file
+    AIndexName := ParseIndexName(Trim(AIndexName));
+    FIndexFile := FDbfFile.GetIndexByName(AIndexName);
+    // store current lRecNo
+    if FCursor = nil then
+    begin
+      lRecNo := 1;
+    end else begin
+      UpdateCursorPos;
+      lRecNo := FCursor.PhysicalRecNo;
+    end;
+    // select new cursor
+    FreeAndNil(FCursor);
+    if FIndexFile <> nil then
+    begin
+      FCursor := TIndexCursor.Create(FIndexFile);
+      // select index
+      FIndexFile.IndexName := AIndexName;
+      // check if can activate master link
+      CheckMasterRange;
+    end else begin
+      FCursor := TDbfCursor.Create(FDbfFile);
+      FIndexName := EmptyStr;
+    end;
+    // reset previous lRecNo
+    FCursor.PhysicalRecNo := lRecNo;
+    // refresh records
+    if State = dsBrowse then
+      Resync([]);
+    // warn user if selecting non-existing index
+    if (FCursor = nil) and (AIndexName <> EmptyStr) then
+      raise EDbfError.CreateFmt(STRING_INDEX_NOT_EXIST, [AIndexName]);
   end;
-  // select new cursor
-  FreeAndNil(FCursor);
-  if FIndexFile <> nil then
-  begin
-    FCursor := TIndexCursor.Create(FIndexFile);
-    // select index
-    FIndexFile.IndexName := AIndexName;
-    // check if can activate master link
-    CheckMasterRange;
-  end else begin
-    FCursor := TDbfCursor.Create(FDbfFile);
-    FIndexName := EmptyStr;
-  end;
-  // reset previous lRecNo
-  FCursor.PhysicalRecNo := lRecNo;
-  // refresh records
-  if State = dsBrowse then
-    Resync([]);
-  // warn user if selecting non-existing index
-  if (FCursor = nil) and (AIndexName <> EmptyStr) then
-    raise EDbfError.CreateFmt(STRING_INDEX_NOT_EXIST, [AIndexName]);
 end;
 
 function TDbf.GetIndexFieldNames: string;

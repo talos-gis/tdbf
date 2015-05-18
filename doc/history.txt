@@ -44,6 +44,7 @@ V6.9.3 (paulenandrew)
 - fix memo file not being maintained correctly if block size is not the default of 1024
 - fix exception inserting into index leaving page locked
 - update references to record number when inserting a record
+- when setting IndexName, do not resync index unless it changed
 
 ------------------------
 V6.9.2
