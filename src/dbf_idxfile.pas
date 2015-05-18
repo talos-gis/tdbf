@@ -305,6 +305,7 @@ type
     function  WalkPrev: boolean;
     function  WalkNext: boolean;
     
+    function  CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericNDX(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericMDX(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysString(Key1, Key2: PAnsiChar): Integer;
@@ -2888,6 +2889,8 @@ var
   I, IntSrc, NumDecimals: Integer;
   ExtValue: Extended;
   BCDdigit: Byte;
+  DoubleValue: Double;
+  IntValue: Integer;
 {$ifdef SUPPORT_INT64}
   Int64Src: Int64;
 {$endif}
@@ -2991,6 +2994,42 @@ begin
 
       // set result pointer to BCD
       Result := TDbfRecordBuffer(@FUserBCD[0]);
+    end;
+  end
+  else
+  begin
+    case PIndexHdr(FIndexHeader)^.KeyType of
+      '@':
+      begin
+        if FIndexVersion = xBaseVII then
+        begin
+          DoubleValue := DateTimeToBDETimeStamp(pDateTime(Buffer)^);
+          SwapInt64BE(@DoubleValue, @FUserBCD);
+          Result := PChar(@FUserBCD[0]);
+        end;
+      end;
+      'O':
+      begin
+        if FIndexVersion = xBaseVII then
+        begin
+          if PDouble(Result)^ < 0 then
+            PInt64(Result)^ := not PInt64(Result)^
+          else
+            PDouble(Result)^ := (PDouble(Result)^) * -1;
+          SwapInt64BE(Result, Result);
+        end;
+      end;
+      'I', '+':
+      begin
+        case FIndexVersion of
+          xBaseVII:
+          begin
+            IntValue := PDWord(result)^ xor $80000000;
+            PDWORD(Result)^ := SwapIntBE(IntValue);
+          end;
+          xFoxPro: PDWORD(Result)^ := SwapIntLE(PDWORD(Result)^);
+        end;
+      end;
     end;
   end;
 end;
@@ -3814,6 +3853,36 @@ begin
   // if descending then reverse order
   if FIsDescending then
     Result := -Result;
+end;
+
+function TIndexFile.CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
+var
+  N1, N2: integer;
+
+  function GetVal(Key: PAnsiChar): DWORD;
+  var
+    b: Boolean;
+  begin
+    Result := 0;
+    case FIndexVersion of
+      xBaseVII:
+      begin
+        if PDWORD(Key)^ <> 0 then
+        begin
+          Result := SwapIntBE(PDWORD(Key)^);
+          Result := Integer(Result xor $80000000);
+        end;
+      end;
+      xFoxPro: Result := SwapIntLE(PInteger(Key)^);
+    end;
+  end;
+
+begin
+  N1 := GetVal(Key1);
+  N2 := GetVal(Key2);
+  if N1 < N2 then Result := -1
+  else if N2 > N2 then Result := 1
+  else Result := 0;
 end;
 
 function TIndexFile.CompareKeysNumericNDX(Key1, Key2: PAnsiChar): Integer;
