@@ -305,6 +305,9 @@ type
     function  WalkPrev: boolean;
     function  WalkNext: boolean;
     
+    function  CompareKeysDate(Key1, Key2: PAnsiChar): Integer;
+    function  CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
+    function  CompareKeysDouble(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericNDX(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericMDX(Key1, Key2: PAnsiChar): Integer;
@@ -3855,13 +3858,102 @@ begin
     Result := -Result;
 end;
 
+function TIndexFile.CompareKeysDate(Key1, Key2: PAnsiChar): Integer;
+var
+  Key1Val, Key2Val, Compare: TDateTime;
+  Key1Len, Key2Len: Integer;
+begin
+  if PIndexHdr(FIndexHeader)^.sKeyType = 0 then
+  begin
+    Key1Len := StrLen(Key1);
+    Key2Len := StrLen(Key2);
+    if (Key1Len <> 0) and (Key2Len <> 0) then
+    begin
+      if TryStrToDate(Key1, Key1Val) and TryStrToDate(Key2, Key2Val) then
+      begin
+        Key1Val := StrToDate(Key1);
+        Key2Val := StrToDate(Key2);
+        if Key1Val > Key2Val then
+          result := 1 else
+        if Key1Val < Key2Val then
+          Result := -1
+        else
+          Result := 0;
+      end
+      else
+        Result := 0
+    end
+    else
+      Result := Key1Len - Key2Len;
+  end
+  else
+  begin
+    Compare := PDateTime(Key1)^ - PDateTime(Key2)^;
+    if Compare > 0 then Result := 1 else
+    if Compare < 0 then Result := -1
+    else Result := 0;
+  end;
+end;
+
+// See http://www.dbase.com/knowledgebase/int/db7_file_fmt.htm
+function TIndexFile.CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
+var
+  Date1, Date2: TDateTime;
+
+  function GetDateTime(Key: pchar): TDateTime;
+  var
+    Temp: packed array[0..7] of char;
+  begin
+    FillChar(Temp, SizeOf(Temp), 0);
+    SwapInt64BE(Key, @Temp);
+    if TDbfFile(FDbfFile).DateTimeHandling = dtBDETimeStamp then
+      Result := BDETimeStampToDateTime(PDouble(@Temp)^)
+    else
+      Result := PDateTime(@Temp)^;
+  end;
+
+begin
+  Date1 := GetDateTime(Key1);
+  Date2 := GetDateTime(Key2);
+  if Date1 > Date2 then Result := 1 else
+  if Date1 < Date2 then Result := -1
+  else Result := 0;
+end;
+
+function TIndexFile.CompareKeysDouble(Key1, Key2: PAnsiChar): Integer;
+var
+  X1, X2: Double;
+
+  function GetVal(Key: PChar): Double;
+  var
+    Temp: packed array[0..7] of byte;
+  begin
+    if PInt64(Key)^ <> 0 then
+    begin
+      SwapInt64BE(Key, @Temp);
+      if PInt64(@temp)^ > 0 then
+        PInt64(@temp)^ := not PInt64(@Temp)^
+      else
+        PDouble(@temp)^ := PDouble(@Temp)^ * -1;
+      Result := PDouble(@Temp)^;
+    end
+    else
+      Result := 0;
+  end;
+
+begin
+  X1 := GetVal(Key1);
+  X2 := GetVal(Key2);
+  if X1 > X2 then Result := 1
+  else if X1 < X2 then Result := -1
+  else Result := 0;
+end;
+
 function TIndexFile.CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
 var
   N1, N2: integer;
 
   function GetVal(Key: PAnsiChar): DWORD;
-  var
-    b: Boolean;
   begin
     Result := 0;
     case FIndexVersion of
@@ -3880,8 +3972,8 @@ var
 begin
   N1 := GetVal(Key1);
   N2 := GetVal(Key2);
-  if N1 < N2 then Result := -1
-  else if N2 > N2 then Result := 1
+  if N2 > N2 then Result := 1
+  else if N1 < N2 then Result := -1
   else Result := 0;
 end;
 
@@ -4040,6 +4132,18 @@ begin
   // select key compare routine
   if PIndexHdr(FIndexHeader)^.KeyType = 'C' then
     FCompareKeys := CompareKeysString
+  else
+  if PIndexHdr(FIndexHeader)^.KeyType = 'D' then
+    FCompareKeys := CompareKeysDate
+  else
+  if PIndexHdr(FIndexHeader)^.KeyType = '@' then
+    FCompareKeys := CompareKeysDateLevel7
+  else
+  if PIndexHdr(FIndexHeader)^.KeyType = 'O' then
+    FCompareKeys := CompareKeysDouble
+  else
+  if PIndexHdr(FIndexHeader)^.KeyType in ['I', '+'] then
+    FCompareKeys := CompareKeysInteger
   else
   if FIndexVersion >= xBaseIV then
     FCompareKeys := CompareKeysNumericMDX
