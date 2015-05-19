@@ -1852,6 +1852,8 @@ begin
         end;
       end;
       RecordSize := PMdxHdr(Header)^.BlockAdder;
+      if (PMdxHdr(Header)^.BlockSize = 0) or (PMdxHdr(Header)^.BlockAdder = 0) then
+        raise EDbfError.Create(STRING_INVALID_MDX_FILE);
       PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
       if SwapWordLE(PMdxHdr(Header)^.TagsUsed) > MaxIndexes then
         raise EDbfError.Create(STRING_INVALID_MDX_FILE);
