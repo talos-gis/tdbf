@@ -442,6 +442,9 @@ const
   Unique_Unique        = $01;
   Unique_Distinct      = $21;
 
+  IndexNameLen         = 16;
+  IndexNameLenMax      = 8;
+
 type
 
   TLCIDList = class(TList)
@@ -457,7 +460,7 @@ type
     Year       : Byte;     // 1
     Month      : Byte;     // 2
     Day        : Byte;     // 3
-    FileName   : array[0..15] of AnsiChar;   // 4..19
+    FileName   : array[0..IndexNameLen - 1] of AnsiChar;   // 4..19
     BlockSize  : Word;     // 20..21
     BlockAdder : Word;     // 22..23
     ProdFlag   : Byte;     // 24
@@ -2028,11 +2031,11 @@ begin
     if lPos > 0 then
       SetLength(HdrFileName, lPos - 1);
   end;
-  if Length(HdrFileName) > 15 then
-    SetLength(HdrFileName, 15);
+  if Length(HdrFileName) > IndexNameLenMax then
+    SetLength(HdrFileName, IndexNameLenMax);
   lenFileName := Length(HdrFileName);
   Move(PAnsiChar(AnsiString(HdrFileName))^, PMdxHdr(Header)^.FileName[0], lenFileName); // Was PChar
-  FillChar(PMdxHdr(Header)^.FileName[lenFileName], 15-lenFileName, 0);
+  FillChar(PMdxHdr(Header)^.FileName[lenFileName], IndexNameLen - lenFileName, 0);
 end;
 
 procedure TIndexFile.Clear;

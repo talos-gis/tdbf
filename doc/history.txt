@@ -65,6 +65,7 @@ following changes thx paulenandrew:
 - Maintain IndexDefs when DeleteIndex is used to delete an index
 - Add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
 - preserve autoincrement field values in TDbf.CopyFrom
+- limit index name length in header to 8 (compatibility with BDE)
 
 ------------------------
 V6.9.1
