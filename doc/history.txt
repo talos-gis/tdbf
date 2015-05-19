@@ -85,6 +85,7 @@ following changes thx paulenandrew:
 - fix record count in DBF header (was not working as intended)
 - add support for files larger than 4 GB (requires compiler to support Int64)
 - add support for building/maintaining Date (D) index
+- fix calculation of tag offset in index file
 
 ------------------------
 V6.9.1

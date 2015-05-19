@@ -2103,7 +2103,7 @@ begin
       FTagSize := SizeOf(rMdx7Tag)
     else
       FTagSize := 32;
-    FTagOffset := 544;
+    FTagOffset := 544 + FTagSize - 32;
     // clear entries
     RecordCount := SwapIntLE(PMdxHdr(Header)^.NumPages);
   end else begin
@@ -2363,8 +2363,6 @@ begin
   // examine all indexes
   if FIndexVersion >= xBaseIV then
   begin
-    // clear all roots
-    ClearRoots;
     // tags are extended at beginning? tagsize is byte sized
     FTagSize := PMdxHdr(Header)^.TagSize;
     FTagOffset := 544 + FTagSize - 32;
@@ -2372,6 +2370,8 @@ begin
       raise EDbfError.Create(STRING_INVALID_MDX_FILE);
     if FTagOffset + (MaxIndexes * FTagSize) > HeaderSize then
       raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+    // clear all roots
+    ClearRoots;
     for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
     begin
       // read page header
@@ -4132,9 +4132,12 @@ begin
     // if xBaseIV then we need to store where pageno of current header
     if FIndexVersion >= xBaseIV then
     begin
-      FMdxTag.Tag := CalcTagOffset(AIndex);
-      FIndexName := FMdxTag.TagName;
-      FHeaderPageNo := FMdxTag.HeaderPageNo;
+      if AIndex < SwapWordLE(PMdxHdr(Header)^.TagsUsed) then
+      begin
+        FMdxTag.Tag := CalcTagOffset(AIndex);
+        FIndexName := FMdxTag.TagName;
+        FHeaderPageNo := FMdxTag.HeaderPageNo;
+      end;
       // does dBase actually use this flag?
 //      FIsExpression := FMdxTag.KeyFormat = KeyFormat_Expression;
     end else begin
