@@ -673,7 +673,7 @@ begin
       FillChar(Header^, HeaderSize, #0);
       if FDbfVersion = xFoxPro then
       begin
-        PDbfHdr(Header)^.VerDBF := $02
+        PDbfHdr(Header)^.VerDBF := $30
       end else
         PDbfHdr(Header)^.VerDBF := $03;
       // standard language WE, dBase III no language support
