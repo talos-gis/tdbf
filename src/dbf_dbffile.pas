@@ -579,7 +579,7 @@ begin
     end;
 
     // record changes
-    if lModified then
+    if lModified and (Mode <> pfReadOnly) then
       WriteHeader;
     
     // open indexes
