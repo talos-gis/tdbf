@@ -4020,10 +4020,10 @@ begin
       Result := MemComp(Key1+2, Key2+2, 10-2);
     end else begin
       // greater 10-power implies bigger number except for zero
-      if (Byte(Key1[0]) = $01) and (Byte(Key1[1]) = $34) then
+      if (Byte(Key1[1]) = $01) and (Byte(Key1[0]) = $34) then
         Result := -1
       else
-      if (Byte(Key2[0]) = $01) and (Byte(Key2[1]) = $34) then
+      if (Byte(Key2[1]) = $01) and (Byte(Key2[0]) = $34) then
         Result := 1
       else
         Result := Byte(Key1[0]) - Byte(Key2[0]);
