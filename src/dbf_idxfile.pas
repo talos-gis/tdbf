@@ -283,6 +283,7 @@ type
     procedure UpdateIndexProperties;
     procedure ClearRoots;
     function  CalcTagOffset(AIndex: Integer): Pointer;
+    procedure LinkTags;
 
     function  FindKey(AInsert: boolean): Integer;
     function  InsertKey(Buffer: TDbfRecordBuffer): Boolean;
@@ -4100,6 +4101,33 @@ begin
   Result := PAnsiChar(Header) + FTagOffset + AIndex * FTagSize;
 end;
 
+procedure TIndexFile.LinkTags;
+var
+  AIndex : Integer;
+  numTags : Word;
+  ATag : Pointer;
+begin
+  if FIndexVersion >= xBaseIV then
+  begin
+    ATag := FTempMdxTag.Tag;
+    try
+      numTags := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
+      for AIndex := 0 to Pred(numTags) do
+      begin
+        FTempMdxTag.Tag := CalcTagOffset(AIndex);
+        FTempMdxTag.ForwardTag1 := 0;
+        if AIndex = Pred(SwapWordLE(PMdxHdr(Header)^.TagsUsed)) then
+          FTempMdxTag.ForwardTag2 := 0
+        else
+          FTempMdxTag.ForwardTag2 := Succ(Succ(AIndex));
+        FTempMdxTag.BackwardTag := AIndex;
+      end;
+    finally
+      FTempMdxTag.Tag := ATag;
+    end;
+  end;
+end;
+
 procedure TIndexFile.SelectIndexVars(AIndex: Integer);
   // *) assumes index is in range
 begin
@@ -4279,6 +4307,7 @@ end;
 
 procedure TIndexFile.WriteFileHeader;
 begin
+  LinkTags;
   inherited WriteHeader;
 end;
 
