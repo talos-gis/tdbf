@@ -890,6 +890,7 @@ var
   SaveState: TDataSetState;
   lPhysicalRecNo: Integer;
 //  s: string;
+  lSequentialRecNo: Integer;
 begin
   if FCursor = nil then
   begin
@@ -898,6 +899,7 @@ begin
   end;
 
   pRecord := pDbfRecord(Buffer);
+  lSequentialRecNo := FCursor.SequentialRecNo;
   acceptable := false;
   repeat
     Result := grOK;
@@ -939,6 +941,8 @@ begin
       pRecord^.BookmarkData.PhysicalRecNo := FCursor.PhysicalRecNo;
       pRecord^.BookmarkFlag := bfCurrent;
       pRecord^.SequentialRecNo := FCursor.SequentialRecNo;
+      if lSequentialRecNo = 0 then
+        lSequentialRecNo := FCursor.SequentialRecNo;
       GetCalcFields(TDbfRecBuf(Buffer));
 
       if Filtered or FFindRecordFilter then
@@ -955,7 +959,11 @@ begin
   until (Result <> grOK) or acceptable;
 
   if Result <> grOK then
+  begin
+    if lSequentialRecNo <> 0 then
+      FCursor.SequentialRecNo := lSequentialRecNo;
     pRecord^.BookmarkData.PhysicalRecNo := -1;
+  end;
 end;
 
 function TDbf.GetRecordSize: Word; {override virtual abstract from TDataset}
