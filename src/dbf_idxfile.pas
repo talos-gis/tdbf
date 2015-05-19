@@ -972,6 +972,7 @@ var
 {$ifdef TDBF_INDEX_CHECK}
   prevKeyData, curKeyData, nextKeyData: PAnsiChar;
 {$endif}
+  Len: Word;
 begin
   // get num entries
   keyData := GetKeyData;
@@ -980,8 +981,13 @@ begin
   if (UpperPage <> nil) and (FEntryNo = FHighIndex) then
     UpperPage.SetEntry(0, AKey, FPageNo);
 {  if PIndexHdr(FIndexFile.IndexHeader).KeyType = 'C' then  }
-    if AKey <> nil then
-      Move(AKey^, keyData^, SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.KeyLen))
+  Len := SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.KeyLen);
+  if AKey <> nil then
+    begin
+      Move(AKey^, keyData^, Len);
+      if (PIndexHdr(FIndexFile.IndexHeader).KeyType = 'C') and (Len <> 0) then
+        ExprTrailingNulsToSpace(keyData, Len);
+    end
     else
       PAnsiChar(keyData)^ := #0;
 {

@@ -364,6 +364,7 @@ const
   ('c' in 'a,b') =False}
 
 function ExprCharToExprType(ExprChar: Char): TExpressionType;
+procedure ExprTrailingNulsToSpace(P: PChar; Len: Integer);
 
 implementation
 
@@ -381,6 +382,25 @@ begin
     'S': Result := etString;
   else
     Result := etUnknown;
+  end;
+end;
+
+procedure ExprTrailingNulsToSpace(P: PChar; Len: Integer);
+var
+  I: Integer;
+begin
+  if Len <> 0 then
+  begin
+    I := Len - 1;
+    repeat
+      if (P+I)^ = #0 then
+      begin
+        (P+I)^ := ' ';
+        Dec(I);
+      end
+      else
+        I:= -1;
+    until I<0;
   end;
 end;
 
@@ -405,14 +425,18 @@ end;
 procedure _StringVariable(Param: PExpressionRec);
 var
   length: integer;
+  P: PAnsiChar;
 begin
   if Assigned(Param^.Args[1]) then // lsp, not set for ExprRec^.ExprWord.FixedLen<0!!!!
     length := PInteger(Param^.Args[1])^
   else
     length := -1;
+  P := PPAnsiChar(Param^.Args[0])^; // Was PPChar
   if length = -1 then
-    length := dbfStrLen(PPAnsiChar(Param^.Args[0])^); // Was PPChar
-  Param^.Res.Append(PPAnsiChar(Param^.Args[0])^, length); // Was PPChar
+    length := dbfStrLen(P)
+  else
+    ExprTrailingNulsToSpace(P, length);
+  Param^.Res.Append(P, length);
 end;
 
 procedure _DateTimeVariable(Param: PExpressionRec);
