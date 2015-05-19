@@ -80,7 +80,7 @@ type
     function  UnlockSection(const Offset, Length: Cardinal): Boolean; virtual;
     procedure UpdateBufferSize;
     procedure RecalcPagesPerRecord;
-    procedure ReadHeader;
+    function ReadHeader: Integer;
     procedure FlushHeader;
     procedure FlushBuffer;
     function  ReadChar: Byte;
@@ -544,7 +544,7 @@ begin
   end;
 end;
 
-procedure TPagedFile.ReadHeader;
+function TPagedFile.ReadHeader: Integer;
    { assumes header is large enough }
 var
   size: Integer;
@@ -577,6 +577,7 @@ begin
     end;
     FillChar(FHeader[size], FHeaderSize-size, 0);
   end;
+  Result := size;
 end;
 
 procedure TPagedFile.TryExclusive;

@@ -2328,6 +2328,7 @@ end;
 procedure TIndexFile.ReadIndexes;
 var
   I: Integer;
+  size: Integer;
 
   procedure CheckHeaderIntegrity;
   begin
@@ -2345,7 +2346,7 @@ var
 
 begin
   // force header reread
-  inherited ReadHeader;
+  size := inherited ReadHeader;
   // examine all indexes
   if FIndexVersion >= xBaseIV then
   begin
@@ -2354,6 +2355,10 @@ begin
     // tags are extended at beginning? tagsize is byte sized
     FTagSize := PMdxHdr(Header)^.TagSize;
     FTagOffset := 544 + FTagSize - 32;
+    if FTagOffset + (SwapWordLE(PMdxHdr(Header)^.TagsUsed) * FTagSize) > size then
+      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+    if FTagOffset + (MaxIndexes * FTagSize) > HeaderSize then
+      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
     for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
     begin
       // read page header

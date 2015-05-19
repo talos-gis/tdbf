@@ -71,6 +71,7 @@ following changes thx paulenandrew:
 - use record packing for index file declarations
 - add support for up to 47 indexes, fix errors if an index file has more than 34 indexes
 - use correct tag size when clearing level 7 indexes
+- if size of tags in index file is too large, raise "Invalid MDX file." exception
 
 ------------------------
 V6.9.1
