@@ -101,7 +101,7 @@ type
     FLockCount: Integer;
     FModified: Boolean;
     FPageNo: Integer;
-    FWeight: Integer;
+    FWeight: TSequentialRecNo;
 
     // bracket props
     FLowBracket: Integer;               //  = FLowIndex if FPageNo = FLowPage
@@ -179,7 +179,7 @@ type
 //    property LowerPageNo: Integer read GetLowerPageNo;        // never used
     property PageBuffer: Pointer read FPageBuffer;
     property PageNo: Integer read FPageNo write SetPageNo;
-    property Weight: Integer read FWeight;
+    property Weight: TSequentialRecNo read FWeight;
 
     property NumEntries: Integer read GetNumEntries;
     property HighBracket: Integer read FHighBracket write FHighBracket;
@@ -323,9 +323,9 @@ type
 //    function  GetIndexCount Integer;
     function  GetExpression: string;
     function  GetPhysicalRecNo: Integer;
-    function  GetSequentialRecNo: Integer;
-    function  GetSequentialRecordCount: Integer;
-    procedure SetSequentialRecNo(RecNo: Integer);
+    function  GetSequentialRecNo: TSequentialRecNo;
+    function  GetSequentialRecordCount: TSequentialRecNo;
+    procedure SetSequentialRecNo(RecNo: TSequentialRecNo);
     procedure SetPhysicalRecNo(RecNo: Integer);
     procedure SetUpdateMode(NewMode: TIndexUpdateMode);
     procedure SetIndexName(const AIndexName: string);
@@ -385,8 +385,8 @@ type
     property EntryHeaderSize: Integer read FEntryHeaderSize;
     property KeyType: AnsiChar read GetKeyType;
 
-    property SequentialRecordCount: Integer read GetSequentialRecordCount;
-    property SequentialRecNo: Integer read GetSequentialRecNo write SetSequentialRecNo;
+    property SequentialRecordCount: TSequentialRecNo read GetSequentialRecordCount;
+    property SequentialRecNo: TSequentialRecNo read GetSequentialRecNo write SetSequentialRecNo;
     property PhysicalRecNo: Integer read GetPhysicalRecNo write SetPhysicalRecNo;
     property HeaderPageNo: Integer read FHeaderPageNo;
 
@@ -3349,7 +3349,8 @@ end;
 
 function TIndexFile.SearchKey(Key: PAnsiChar; SearchType: TSearchKeyType): Boolean;
 var
-  findres, currRecNo: Integer;
+  findres: Integer;
+  currRecNo: TSequentialRecNo;
 begin
   // save current position
   currRecNo := SequentialRecNo;
@@ -3578,7 +3579,7 @@ end;
 procedure TIndexFile.ResyncRange(KeepPosition: boolean);
 var
   Result: Boolean;
-  currRecNo: integer;
+  currRecNo: TSequentialRecNo;
 begin
   if not FRangeActive then
     exit;
@@ -3730,12 +3731,12 @@ begin
   Result := FLeaf.PhysicalRecNo;
 end;
 
-function TIndexFile.GetSequentialRecordCount: Integer;
+function TIndexFile.GetSequentialRecordCount: TSequentialRecNo;
 begin
   Result := FRoot.Weight * (FRoot.HighIndex + 1);
 end;
 
-function TIndexFile.GetSequentialRecNo: Integer;
+function TIndexFile.GetSequentialRecNo: TSequentialRecNo;
 var
   TempPage: TIndexPage;
 begin
@@ -3755,7 +3756,7 @@ begin
   end;
 end;
 
-procedure TIndexFile.SetSequentialRecNo(RecNo: Integer);
+procedure TIndexFile.SetSequentialRecNo(RecNo: TSequentialRecNo);
 var
   TempPage: TIndexPage;
   gotoEntry: Integer;

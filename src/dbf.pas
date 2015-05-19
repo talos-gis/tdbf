@@ -37,7 +37,7 @@ type
   TDbfRecordHeader = record
     BookmarkData: TBookmarkData;
     BookmarkFlag: TBookmarkFlag;
-    SequentialRecNo: Integer;
+    SequentialRecNo: TSequentialRecNo;
     DeletedFlag: AnsiChar;
   end;
 //====================================================================
@@ -890,7 +890,7 @@ var
   SaveState: TDataSetState;
   lPhysicalRecNo: Integer;
 //  s: string;
-  lSequentialRecNo: Integer;
+  lSequentialRecNo: TSequentialRecNo;
 begin
   if FCursor = nil then
   begin
@@ -1831,7 +1831,7 @@ end;
 
 function TDbf.Locate(const KeyFields: string; const KeyValues: Variant; Options: TLocateOptions): Boolean;
 var
-  saveRecNo: integer;
+  saveRecNo: TSequentialRecNo;
 begin
   if FCursor = nil then
   begin
@@ -2243,7 +2243,7 @@ end;
 // warning: is very slow, compared to GetRecordCount
 function TDbf.GetExactRecordCount: Integer;
 var
-  prevRecNo: Integer;
+  prevRecNo: TSequentialRecNo;
   getRes: TGetResult;
 begin
   // init vars

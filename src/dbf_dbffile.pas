@@ -154,9 +154,9 @@ type
     function GetPhysicalRecNo: Integer; override;
     procedure SetPhysicalRecNo(RecNo: Integer); override;
 
-    function GetSequentialRecordCount: Integer; override;
-    function GetSequentialRecNo: Integer; override;
-    procedure SetSequentialRecNo(RecNo: Integer); override;
+    function GetSequentialRecordCount: TSequentialRecNo; override;
+    function GetSequentialRecNo: TSequentialRecNo; override;
+    procedure SetSequentialRecNo(RecNo: TSequentialRecNo); override;
   end;
 
 //====================================================================
@@ -2756,17 +2756,17 @@ begin
   FPhysicalRecNo := RecNo;
 end;
 
-function TDbfCursor.GetSequentialRecordCount: Integer;
+function TDbfCursor.GetSequentialRecordCount: TSequentialRecNo;
 begin
   Result := TDbfFile(PagedFile).RecordCount;
 end;
 
-function TDbfCursor.GetSequentialRecNo: Integer;
+function TDbfCursor.GetSequentialRecNo: TSequentialRecNo;
 begin
   Result := FPhysicalRecNo;
 end;
 
-procedure TDbfCursor.SetSequentialRecNo(RecNo: Integer);
+procedure TDbfCursor.SetSequentialRecNo(RecNo: TSequentialRecNo);
 begin
   FPhysicalRecNo := RecNo;
 end;

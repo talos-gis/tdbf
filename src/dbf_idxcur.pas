@@ -22,10 +22,10 @@ type
     FIndexFile: TIndexFile;
   protected
     function  GetPhysicalRecNo: Integer; override;
-    function  GetSequentialRecNo: Integer; override;
-    function  GetSequentialRecordCount: Integer; override;
+    function  GetSequentialRecNo: TSequentialRecNo; override;
+    function  GetSequentialRecordCount: TSequentialRecNo; override;
     procedure SetPhysicalRecNo(RecNo: Integer); override;
-    procedure SetSequentialRecNo(RecNo: Integer); override;
+    procedure SetSequentialRecNo(RecNo: TSequentialRecNo); override;
 
   public
     constructor Create(DbfIndexFile: TIndexFile);
@@ -114,17 +114,17 @@ begin
   TIndexFile(PagedFile).PhysicalRecNo := RecNo;
 end;
 
-function TIndexCursor.GetSequentialRecordCount: Integer;
+function TIndexCursor.GetSequentialRecordCount: TSequentialRecNo;
 begin
   Result := TIndexFile(PagedFile).SequentialRecordCount;
 end;
 
-function TIndexCursor.GetSequentialRecNo: Integer;
+function TIndexCursor.GetSequentialRecNo: TSequentialRecNo;
 begin
   Result := TIndexFile(PagedFile).SequentialRecNo;
 end;
 
-procedure TIndexCursor.SetSequentialRecNo(RecNo: Integer);
+procedure TIndexCursor.SetSequentialRecNo(RecNo: TSequentialRecNo);
 begin
   TIndexFile(PagedFile).SequentialRecNo := RecNo;
 end;

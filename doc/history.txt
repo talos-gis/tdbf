@@ -91,6 +91,7 @@ following changes thx paulenandrew:
 - fix index key violation error handling
 - preserve cursor if GetRecord finds no record
 - fix index file key length error handling, raise "Invalid MDX file." exception
+- fix Integer overflow errors if more than 2,147,483,648 entries in an index file (requires compiler to support Int64)
 
 ------------------------
 V6.9.1

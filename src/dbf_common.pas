@@ -95,6 +95,12 @@ type
   dword = cardinal;
 {$endif}
 
+{$ifdef SUPPORT_INT64}
+  TSequentialRecNo = Int64;
+{$else}
+  TSequentialRecNo = Integer;
+{$endif}
+
 //-------------------------------------
 
 {$ifndef SUPPORT_FREEANDNIL}
