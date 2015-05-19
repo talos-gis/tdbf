@@ -1780,7 +1780,7 @@ begin
     etInteger, etLargeInt, etFloat: Result := 'N';
     etDateTime: Result := 'D';
   else
-    raise EDbfError.Create(STRING_INVALID_INDEX_TYPE);
+    raise EParserException.Create(STRING_INVALID_INDEX_TYPE);
   end;
   lDbfFieldDef:= DbfFieldDef;
   if Assigned(lDbfFieldDef) then

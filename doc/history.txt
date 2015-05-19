@@ -93,6 +93,7 @@ following changes thx paulenandrew:
 - fix index file key length error handling, raise "Invalid MDX file." exception
 - fix Integer overflow errors if more than 2,147,483,648 entries in an index file (requires compiler to support Int64)
 - fix inaccurate floating point values in numeric index
+- consistently use EParserException for parser error
 
 ------------------------
 V6.9.1
