@@ -33,7 +33,14 @@ BUGS & WARNINGS
 
 
 ------------------------
-V6.9.3 (paulenandrew)
+V6.9.2
+
+- compile fixes for delphi 4, 5 (pdouble)
+- fix indexes to work properly with ansi upper/lower casing
+- fix memory leak when inserting duplicate item in AVL tree 
+- add german localization strings (thx heiko)
+
+following changes thx paulenandrew:
 - fix compiler errors in dbf_ansistrings for Free Pascal
 - fix compiler errors in dbf_dbffile for Free Pascal
 - expose TIndexFile.CompareKeys in TDbf.CompareKeys
@@ -57,14 +64,6 @@ V6.9.3 (paulenandrew)
 - Add support for SetKey, GotoKey and GotoNearest
 - Maintain IndexDefs when DeleteIndex is used to delete an index
 - Add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
-
-------------------------
-V6.9.2
-
-- compile fixes for delphi 4, 5 (pdouble)
-- fix indexes to work properly with ansi upper/lower casing
-- fix memory leak when inserting duplicate item in AVL tree 
-- add german localization strings (thx heiko)
 
 ------------------------
 V6.9.1
