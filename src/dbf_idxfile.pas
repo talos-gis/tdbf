@@ -455,7 +455,7 @@ type
   end;
 
   PMdxHdr = ^rMdxHdr;
-  rMdxHdr = record
+  rMdxHdr = packed record
     MdxVersion : Byte;     // 0
     Year       : Byte;     // 1
     Month      : Byte;     // 2
@@ -484,7 +484,7 @@ type
   // KeyType -> Variable position, db7 different from db4
 
   PMdx4Tag = ^rMdx4Tag;
-  rMdx4Tag = record
+  rMdx4Tag = packed record
     HeaderPageNo   : Integer;      // 0..3
     TagName        : array [0..10] of AnsiChar;  // 4..14 of Byte
     KeyFormat      : Byte;         // 15     00h: Calculated
@@ -499,7 +499,7 @@ type
   end;
 
   PMdx7Tag = ^rMdx7Tag;
-  rMdx7Tag = record
+  rMdx7Tag = packed record
     HeaderPageNo   : Integer;      // 0..3
     TagName        : array [0..32] of AnsiChar;  // 4..36 of Byte
     KeyFormat      : Byte;         // 37     00h: Calculated
@@ -514,7 +514,7 @@ type
   end;
 
   PIndexHdr = ^rIndexHdr;
-  rIndexHdr = record
+  rIndexHdr = packed record
     RootPage       : Integer;  // 0..3
     NumPages       : Integer;  // 4..7
     KeyFormat      : Byte;     // 8      00h: Right, Left, DTOC
@@ -546,27 +546,27 @@ type
   end;
 
   PMdxEntry = ^rMdxEntry;
-  rMdxEntry = record
+  rMdxEntry = packed record
     RecBlockNo: Longint;       // 0..3   either recno or blockno
     KeyData   : AnsiChar;          // 4..    first byte of data, context => length
   end;
 
   PMdxPage = ^rMdxPage;
-  rMdxPage = record
+  rMdxPage = packed record
     NumEntries : Integer;
     PrevBlock  : Integer;
     FirstEntry : rMdxEntry;
   end;
 
   PNdxEntry  = ^rNdxEntry;
-  rNdxEntry  = record
+  rNdxEntry  = packed record
     LowerPageNo: Integer;      //  0..3 lower page
     RecNo      : Integer;      //  4..7 recno
     KeyData    : AnsiChar;
   end;
 
   PNdxPage  = ^rNdxPage;
-  rNdxPage  = record
+  rNdxPage  = packed record
     NumEntries: Integer;       //  0..3
     FirstEntry: rNdxEntry;
   end;
