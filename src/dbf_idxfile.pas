@@ -1834,7 +1834,7 @@ begin
       FPageHeaderSize := 8;
       FEntryBof := @Entry_Mdx_BOF;
       FEntryEof := @Entry_Mdx_EOF;
-      HeaderSize := 2048;
+      HeaderSize := 512 + (Succ(MaxIndexes) * SizeOf(rMdx7Tag));
       RecordSize := 1024;
       PageSize := 512;
       if FileCreated then
