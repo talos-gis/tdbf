@@ -283,7 +283,9 @@ type
     procedure ConstructInsertErrorMsg;
     procedure WriteIndexHeader(AIndex: Integer);
     procedure SelectIndexVars(AIndex: Integer);
+    procedure CalcKeyLen;
     procedure CalcKeyProperties;
+    procedure CalcRegenerateIndex;
     procedure UpdateIndexProperties;
     procedure ClearRoots;
     function  CalcTagOffset(AIndex: Integer): Pointer;
@@ -354,6 +356,7 @@ type
     procedure RepageFile;
     procedure CompactFile;
     procedure PrepareRename(NewFileName: string);
+    procedure CalcRegenerateIndexes;
 
     procedure CreateIndex(FieldDesc, TagName: string; Options: TIndexOptions);
     function  ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
@@ -2180,6 +2183,29 @@ begin
   end;
 end;
 
+procedure TIndexFile.CalcKeyLen;
+var
+  lKeyLen: Word;
+begin
+  case FCurrentParser.KeyType of
+    'N':
+    begin
+      if FIndexVersion >= xBaseIV then
+        lKeyLen := 12
+      else
+        lKeyLen := 8;
+    end;
+    'D': lKeyLen := 8;
+    '@': lKeyLen := 8;
+    'O': lKeyLen := 8;
+    'I': lKeyLen := 4;
+    '+': lKeyLen := 4;
+  else
+    lKeyLen:= FCurrentParser.ResultLen;
+  end;
+  PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(lKeyLen);
+end;
+
 procedure TIndexFile.CalcKeyProperties;
   // given KeyLen, this func calcs KeyRecLen and NumEntries
 begin
@@ -2188,6 +2214,12 @@ begin
     PIndexHdr(FIndexHeader)^.KeyLen) + FEntryHeaderSize + 3) and not 3);
   PIndexHdr(FIndexHeader)^.NumKeys := SwapWordLE((RecordSize - FPageHeaderSize) div 
     SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen));
+end;
+
+procedure TIndexFile.CalcRegenerateIndex; // 07/06/2011 pb  CR 19188
+begin
+  CalcKeyLen;
+  CalcKeyProperties;
 end;
 
 function TIndexFile.GetName: string;
@@ -2204,7 +2236,6 @@ var
   tagNo: Integer;
   fieldType: AnsiChar;
   TempParser: TDbfIndexParser;
-  lKeyLen: Word;
 begin
   // check if we have exclusive access to table
   TDbfFile(FDbfFile).CheckExclusiveAccess;
@@ -2301,23 +2332,7 @@ begin
     PIndexHdr(FIndexHeader)^.Unique := Unique_Unique;
   end;
   // keylen is exact length of field
-  case fieldType of
-    'N':
-    begin
-      if FIndexVersion >= xBaseIV then
-        lKeyLen := 12
-      else
-        lKeyLen := 8;
-    end;
-    'D': lKeyLen := 8;
-    '@': lKeyLen := 8;
-    'O': lKeyLen := 8;
-    'I': lKeyLen := 4;
-    '+': lKeyLen := 4;
-  else
-    lKeyLen := FCurrentParser.ResultLen;
-  end;
-  PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(lKeyLen);
+  CalcKeyLen;
   CalcKeyProperties;
   // key desc
   dbfStrPLCopy(PIndexHdr(FIndexHeader)^.KeyDesc, AnsiString(FieldDesc), 219); // Was PChar, AnsiString cast added
@@ -2821,6 +2836,31 @@ begin
     WriteDBFileName(PMdxHdr(Header), NewFileName);
     WriteFileHeader;
   end;
+end;
+
+procedure TIndexFile.CalcRegenerateIndexes;
+
+var
+  curSel: Integer;
+  I: Integer;
+begin
+  if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
+  begin
+    curSel := FSelectedIndex;
+    try
+      I := 0;
+      while I < SwapWordLE(PMdxHdr(Header)^.TagsUsed) do
+      begin
+        SelectIndexVars(I);
+        CalcRegenerateIndex;
+        Inc(I);
+      end;
+    finally
+      SelectIndexVars(curSel);
+    end;
+  end
+  else
+    CalcRegenerateIndex;
 end;
 
 function TIndexFile.GetNewPageNo: Integer;

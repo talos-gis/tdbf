@@ -112,7 +112,7 @@ type
     procedure SetFieldData(Column: Integer; DataType: TFieldType; Src,Dst: Pointer; NativeFormat: boolean);
     procedure InitRecord(DestBuf: PAnsiChar);
     procedure InitRecordForIndex(DestBuf: PAnsiChar);
-    procedure PackIndex(lIndexFile: TIndexFile; AIndexName: string);
+    procedure PackIndex(lIndexFile: TIndexFile; AIndexName: string; CreateIndex: Boolean);
     procedure RegenerateIndexes;
     procedure LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure UnlockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
@@ -1428,7 +1428,7 @@ begin
   // recreate every index in every file
   for lIndexNo := 0 to FIndexFiles.Count-1 do
   begin
-    PackIndex(TIndexFile(FIndexFiles.Items[lIndexNo]), EmptyStr);
+    PackIndex(TIndexFile(FIndexFiles.Items[lIndexNo]), EmptyStr, False);
   end;
 end;
 
@@ -2219,7 +2219,7 @@ begin
           // create index if asked
           lIndexFile.CreateIndex(IndexField, IndexName, Options);
           // add all records
-          PackIndex(lIndexFile, IndexName);
+          PackIndex(lIndexFile, IndexName, CreateIndex);
           // if we wanted to open index readonly, but we created it, then reopen
           if Mode = pfReadOnly then
           begin
@@ -2262,7 +2262,7 @@ begin
   end;
 end;
 
-procedure TDbfFile.PackIndex(lIndexFile: TIndexFile; AIndexName: string);
+procedure TDbfFile.PackIndex(lIndexFile: TIndexFile; AIndexName: string; CreateIndex: Boolean);
 var
   prevMode: TIndexUpdateMode;
   prevIndex: string;
@@ -2279,12 +2279,16 @@ begin
   begin
     // only pack specified index, not all
     lIndexFile.IndexName := AIndexName;
-    lIndexFile.ClearIndex;
     lIndexFile.UpdateMode := umCurrent;
+    if not CreateIndex then
+      lIndexFile.CalcRegenerateIndexes;
+    lIndexFile.ClearIndex;
   end else begin
     lIndexFile.IndexName := EmptyStr;
-    lIndexFile.Clear;
     lIndexFile.UpdateMode := umAll;
+    if not CreateIndex then
+      lIndexFile.CalcRegenerateIndexes;
+    lIndexFile.Clear;
   end;
   // prepare update
   cur := 1;

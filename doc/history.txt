@@ -95,6 +95,7 @@ following changes thx paulenandrew:
 - fix inaccurate floating point values in numeric index
 - consistently use EParserException for parser error
 - fix error handling if invalid record number in index
+- recalculate key length when rebuilding an index, to correct it if necessary
 
 ------------------------
 V6.9.1
