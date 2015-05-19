@@ -66,6 +66,7 @@ following changes thx paulenandrew:
 - Add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
 - preserve autoincrement field values in TDbf.CopyFrom
 - limit index name length in header to 8 (compatibility with BDE)
+- if TagsUsed is more than 47 tags in an index file, raise "Invalid MDX file." exception
 
 ------------------------
 V6.9.1

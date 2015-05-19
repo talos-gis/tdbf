@@ -1851,6 +1851,8 @@ begin
       end;
       RecordSize := PMdxHdr(Header)^.BlockAdder;
       PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
+      if SwapWordLE(PMdxHdr(Header)^.TagsUsed) > MaxIndexes then
+        raise EDbfError.Create(STRING_INVALID_MDX_FILE);
       case FIndexVersion of
         xBaseVII:
           begin
