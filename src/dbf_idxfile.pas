@@ -2178,6 +2178,7 @@ var
   tagNo: Integer;
   fieldType: AnsiChar;
   TempParser: TDbfIndexParser;
+  lKeyLen: Word;
 begin
   // check if we have exclusive access to table
   TDbfFile(FDbfFile).CheckExclusiveAccess;
@@ -2190,6 +2191,7 @@ begin
     case TempParser.ResultType of
       etString: ; { default set above to suppress delphi warning }
       etInteger, etLargeInt, etFloat: fieldType := 'N';
+      etDateTime: fieldType := 'D';
     else
       raise EDbfError.Create(STRING_INVALID_INDEX_TYPE);
     end;
@@ -2280,12 +2282,19 @@ begin
     PIndexHdr(FIndexHeader)^.Unique := Unique_Unique;
   end;
   // keylen is exact length of field
-  if fieldType = 'C' then
-    PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(FCurrentParser.ResultLen)
-  else if FIndexVersion >= xBaseIV then
-    PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(12)
+  case fieldType of
+    'N':
+    begin
+      if FIndexVersion >= xBaseIV then
+        lKeyLen := 12
+      else
+        lKeyLen := 8;
+    end;
+    'D': lKeyLen := 8;
   else
-    PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(8);
+    lKeyLen := FCurrentParser.ResultLen;
+  end;
+  PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(lKeyLen);
   CalcKeyProperties;
   // key desc
   dbfStrPLCopy(PIndexHdr(FIndexHeader)^.KeyDesc, AnsiString(FieldDesc), 219); // Was PChar, AnsiString cast added
@@ -3022,6 +3031,11 @@ begin
   else
   begin
     case PIndexHdr(FIndexHeader)^.KeyType of
+      'D':
+      begin
+        FUserNumeric:= PDouble(Result)^ + 2415019; {Julian date}
+        Result:= @FUserNumeric;
+      end;
       '@':
       begin
         if FIndexVersion = xBaseVII then
@@ -3058,9 +3072,14 @@ begin
 end;
 
 function TIndexFile.ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
+var
+  KeyBuffer: PAnsiChar;
 begin
   // execute expression to get key
-  Result := PAnsiChar(PrepareKey(TDbfRecordBuffer(FCurrentParser.ExtractFromBuffer(PAnsiChar(Buffer))), FCurrentParser.ResultType));
+  KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
+  if FCurrentParser.ExtractIsNull(Buffer) then
+    PDouble(KeyBuffer)^ := 1E100;
+  Result := PrepareKey(KeyBuffer, FCurrentParser.ResultType);
   if not FCurrentParser.RawStringFields then
     TranslateString(GetACP, FCodePage, Result, Result, KeyLen);
 end;
@@ -3880,60 +3899,29 @@ end;
 
 function TIndexFile.CompareKeysDate(Key1, Key2: PAnsiChar): Integer;
 var
-  Key1Val, Key2Val, Compare: TDateTime;
-  Key1Len, Key2Len: Integer;
+  Compare: TDateTime;
 begin
-  if PIndexHdr(FIndexHeader)^.sKeyType = 0 then
-  begin
-    Key1Len := StrLen(Key1);
-    Key2Len := StrLen(Key2);
-    if (Key1Len <> 0) and (Key2Len <> 0) then
-    begin
-      if TryStrToDate(Key1, Key1Val) and TryStrToDate(Key2, Key2Val) then
-      begin
-        if Key1Val > Key2Val then
-          Result := 1 else
-        if Key1Val < Key2Val then
-          Result := -1
-        else
-          Result := 0;
-      end
-      else
-        Result := 0
-    end
-    else
-      Result := Key1Len - Key2Len;
-  end
-  else
-  begin
-    Compare := PDateTime(Key1)^ - PDateTime(Key2)^;
-    if Compare > 0 then Result := 1 else
-    if Compare < 0 then Result := -1
-    else Result := 0;
-  end;
+  Compare := PDateTime(Key1)^ - PDateTime(Key2)^;
+  if Compare > 0 then Result := 1 else
+  if Compare < 0 then Result := -1
+  else Result := 0;
 end;
 
 function TIndexFile.CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
 var
-  Date1, Date2: TDateTime;
+  Compare: TDateTime;
 
-  function GetVal(Key: pchar): TDateTime;
-  var
-    Temp: packed array[0..7] of char;
+  function GetVal(Key: PAnsiChar): TDateTime;
   begin
-    FillChar(Temp, SizeOf(Temp), 0);
-    SwapInt64BE(Key, @Temp);
+    SwapInt64BE(Key, @Result);
     if TDbfFile(FDbfFile).DateTimeHandling = dtBDETimeStamp then
-      Result := BDETimeStampToDateTime(PDouble(@Temp)^)
-    else
-      Result := PDateTime(@Temp)^;
+      Result := BDETimeStampToDateTime(Result);
   end;
 
 begin
-  Date1 := GetVal(Key1);
-  Date2 := GetVal(Key2);
-  if Date1 > Date2 then Result := 1 else
-  if Date1 < Date2 then Result := -1
+  Compare := GetVal(Key1) - GetVal(Key2);
+  if Compare > 0 then Result := 1 else
+  if Compare < 0 then Result := -1
   else Result := 0;
 end;
 
@@ -3941,7 +3929,7 @@ function TIndexFile.CompareKeysDouble(Key1, Key2: PAnsiChar): Integer;
 var
   X1, X2: Double;
 
-  function GetVal(Key: PChar): Double;
+  function GetVal(Key: PAnsiChar): Double;
   var
     Temp: packed array[0..7] of byte;
   begin

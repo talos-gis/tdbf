@@ -54,6 +54,7 @@ type
 
     procedure ParseExpression(AExpression: string); virtual;
     function ExtractFromBuffer(Buffer: PAnsiChar): PAnsiChar; virtual;
+    function ExtractIsNull(Buffer: PAnsiChar): Boolean;
 
     property DbfFile: Pointer read FDbfFile write FDbfFile;
     property Expression: string read FCurrentExpression;
@@ -599,6 +600,19 @@ begin
     // if string then dereference
     if FFieldType = etString then
       Result := PAnsiChar(PPAnsiChar(Result)^); // Was PPChar
+  end;
+end;
+
+function TDbfParser.ExtractIsNull(Buffer: PAnsiChar): Boolean;
+var
+  FieldVar: TFieldVar;
+begin
+  if FIsExpression then
+    Result := False
+  else
+  begin
+    FieldVar := TFieldVar(FFieldVarList.Objects[0]);
+    Result := not FieldVar.DbfFile.GetFieldDataFromDef(FieldVar.FieldDef, FieldVar.FieldDef.FieldType, Buffer, nil, True);
   end;
 end;
 
