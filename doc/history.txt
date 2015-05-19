@@ -72,6 +72,7 @@ following changes thx paulenandrew:
 - add support for up to 47 indexes, fix errors if an index file has more than 34 indexes
 - use correct tag size when clearing level 7 indexes
 - if size of tags in index file is too large, raise "Invalid MDX file." exception
+- fix potential Range Check Error when deleting an entry from an index
 
 ------------------------
 V6.9.1

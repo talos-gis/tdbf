@@ -826,7 +826,8 @@ begin
   // one entry less now
   dec(lNumEntries);
   dec(FHighIndex);
-  SetNumEntries(lNumEntries);
+  if lNumEntries >= 0 then
+    SetNumEntries(lNumEntries);
   // zero last one out to not get confused about internal or leaf pages
   // note: need to decrease lNumEntries and HighIndex first, otherwise
   //   check on page key consistency will fail
