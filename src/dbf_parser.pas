@@ -32,6 +32,7 @@ type
     FRawStringFields: Boolean;
     FPartialMatch: boolean;
 
+    function GetDbfFieldDef: TDbfFieldDef;
   protected
     FCurrentExpression: string;
 
@@ -42,6 +43,7 @@ type
     procedure ValidateExpression(AExpression: string); virtual;
     function  GetResultType: TExpressionType; override;
     function  GetResultLen: Integer;
+    property  DbfFieldDef: TDbfFieldDef read GetDbfFieldDef;
 
     procedure SetCaseInsensitive(NewInsensitive: Boolean);
     procedure SetRawStringFields(NewRawFields: Boolean);
@@ -613,6 +615,19 @@ begin
   begin
     FieldVar := TFieldVar(FFieldVarList.Objects[0]);
     Result := not FieldVar.DbfFile.GetFieldDataFromDef(FieldVar.FieldDef, FieldVar.FieldDef.FieldType, Buffer, nil, True);
+  end;
+end;
+
+function TDbfParser.GetDbfFieldDef: TDbfFieldDef;
+var
+  FieldVar: TFieldVar;
+begin
+  if FIsExpression then
+    Result := nil
+  else
+  begin
+    FieldVar:= TFieldVar(FFieldVarList.Objects[0]);
+    Result := FieldVar.FieldDef;
   end;
 end;
 

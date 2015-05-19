@@ -79,12 +79,15 @@ type
   end;
 
   TDbfIndexParser = class(TDbfParser)
+  private
+    function GetKeyType: Char;
   protected
     FResultLen: Integer; 
 
     procedure ValidateExpression(AExpression: string); override;
   public
     property ResultLen: Integer read FResultLen;
+    property KeyType: Char read GetKeyType;
   end;
 //===========================================================================
   TIndexFile = class;
@@ -308,9 +311,7 @@ type
     function  WalkNext: boolean;
     
     function  CompareKeysDate(Key1, Key2: PAnsiChar): Integer;
-    function  CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
-    function  CompareKeysDouble(Key1, Key2: PAnsiChar): Integer;
-    function  CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
+    function  CompareKeysLevel7(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericNDX(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysNumericMDX(Key1, Key2: PAnsiChar): Integer;
     function  CompareKeysString(Key1, Key2: PAnsiChar): Integer;
@@ -1770,6 +1771,23 @@ begin
     raise EDbfError.CreateFmt(STRING_INDEX_EXPRESSION_TOO_LONG, [AExpression, FResultLen]);
 end;
 
+function TDbfIndexParser.GetKeyType: Char;
+var
+  lDbfFieldDef: TDbfFieldDef;
+begin
+  case ResultType of
+    etString: Result:= 'C';
+    etInteger, etLargeInt, etFloat: Result := 'N';
+    etDateTime: Result := 'D';
+  else
+    raise EDbfError.Create(STRING_INVALID_INDEX_TYPE);
+  end;
+  lDbfFieldDef:= DbfFieldDef;
+  if Assigned(lDbfFieldDef) then
+    if lDbfFieldDef.NativeFieldType in ['@', 'O', 'I', '+'] then
+      Result:= lDbfFieldDef.NativeFieldType;
+end;
+
 //==============================================================================
 //============ TIndexFile
 //==============================================================================
@@ -2195,14 +2213,7 @@ begin
   try
     TempParser.ParseExpression(String(FieldDesc));
     // check if result type is correct
-    fieldType := 'C';
-    case TempParser.ResultType of
-      etString: ; { default set above to suppress delphi warning }
-      etInteger, etLargeInt, etFloat: fieldType := 'N';
-      etDateTime: fieldType := 'D';
-    else
-      raise EDbfError.Create(STRING_INVALID_INDEX_TYPE);
-    end;
+    fieldType := TempParser.KeyType;
   finally
     TempParser.Free;
   end;
@@ -2299,6 +2310,10 @@ begin
         lKeyLen := 8;
     end;
     'D': lKeyLen := 8;
+    '@': lKeyLen := 8;
+    'O': lKeyLen := 8;
+    'I': lKeyLen := 4;
+    '+': lKeyLen := 4;
   else
     lKeyLen := FCurrentParser.ResultLen;
   end;
@@ -2924,14 +2939,15 @@ var
   I, IntSrc, NumDecimals: Integer;
   ExtValue: Extended;
   BCDdigit: Byte;
-  DoubleValue: Double;
-  IntValue: Integer;
 {$ifdef SUPPORT_INT64}
   Int64Src: Int64;
 {$endif}
 begin
   // need to convert numeric?
-  Result := Buffer;
+  Result := nil;
+  if PIndexHdr(FIndexHeader)^.KeyType = 'C' then
+    Result := Buffer
+  else
   if CharInSet(PIndexHdr(FIndexHeader)^.KeyType, ['F', 'N']) then
   begin
     if FIndexVersion = xBaseIII then
@@ -2940,13 +2956,13 @@ begin
       case ResultType of
         etInteger:
           begin
-            FUserNumeric := PInteger(Result)^;
+            FUserNumeric := PInteger(Buffer)^;
             Result := TDbfRecordBuffer(@FUserNumeric);
           end;
 {$ifdef SUPPORT_INT64}
         etLargeInt:
           begin
-            FUserNumeric := PLargeInt(Result)^;
+            FUserNumeric := PLargeInt(Buffer)^;
             Result := TDbfRecordBuffer(@FUserNumeric);
           end;
 {$endif}
@@ -2957,7 +2973,7 @@ begin
       case ResultType of
         etInteger:
           begin
-            IntSrc := PInteger(Result)^;
+            IntSrc := PInteger(Buffer)^;
             // handle zero differently: no decimals
             if IntSrc <> 0 then
               NumDecimals := GetStrFromInt(IntSrc, @FloatRec.Digits[0])
@@ -2968,7 +2984,7 @@ begin
 {$ifdef SUPPORT_INT64}
         etLargeInt:
           begin
-            Int64Src := PLargeInt(Result)^;
+            Int64Src := PLargeInt(Buffer)^;
             if Int64Src <> 0 then
               NumDecimals := GetStrFromInt64(Int64Src, @FloatRec.Digits[0])
             else
@@ -2978,7 +2994,7 @@ begin
 {$endif}
         etFloat:
           begin
-            ExtValue := PDouble(Result)^;
+            ExtValue := PDouble(Buffer)^;
             FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 9999, 15);
             if ExtValue <> 0.0 then
               NumDecimals := dbfStrLen(PAnsiChar(@FloatRec.Digits[0]))
@@ -3032,57 +3048,36 @@ begin
     end;
   end
   else
+  if PIndexHdr(FIndexHeader)^.KeyType = 'D' then
   begin
-    case PIndexHdr(FIndexHeader)^.KeyType of
-      'D':
-      begin
-        FUserNumeric:= PDouble(Result)^ + 2415019; {Julian date}
-        Result:= @FUserNumeric;
-      end;
-      '@':
-      begin
-        if FIndexVersion = xBaseVII then
-        begin
-          DoubleValue := DateTimeToBDETimeStamp(pDateTime(Buffer)^);
-          SwapInt64BE(@DoubleValue, @FUserBCD);
-          Result := PChar(@FUserBCD[0]);
-        end;
-      end;
-      'O':
-      begin
-        if FIndexVersion = xBaseVII then
-        begin
-          if PDouble(Result)^ < 0 then
-            PInt64(Result)^ := not PInt64(Result)^
-          else
-            PDouble(Result)^ := (PDouble(Result)^) * -1;
-          SwapInt64BE(Result, Result);
-        end;
-      end;
-      'I', '+':
-      begin
-        case FIndexVersion of
-          xBaseVII:
-          begin
-            IntValue := PDWord(result)^ xor $80000000;
-            PDWORD(Result)^ := SwapIntBE(IntValue);
-          end;
-          xFoxPro: PDWORD(Result)^ := SwapIntLE(PDWORD(Result)^);
-        end;
-      end;
-    end;
+    FUserNumeric:= PDouble(Buffer)^ + 2415019; {Julian date}
+    Result:= @FUserNumeric;
   end;
 end;
 
 function TIndexFile.ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
 var
   KeyBuffer: PAnsiChar;
+  DbfFieldDef: TDbfFieldDef;
 begin
   // execute expression to get key
-  KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
-  if FCurrentParser.ExtractIsNull(Buffer) then
-    PDouble(KeyBuffer)^ := 1E100;
-  Result := PrepareKey(KeyBuffer, FCurrentParser.ResultType);
+  if KeyType in ['@', 'O', 'I', '+'] then
+  begin
+    Result := nil;
+    DbfFieldDef := FCurrentParser.DbfFieldDef;
+    if Assigned(DbfFieldDef) then
+      if DbfFieldDef.NativeFieldType = PIndexHdr(FIndexHeader)^.KeyType then
+        Result := Buffer + DbfFieldDef.Offset;
+  end
+  else
+  begin
+    KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
+    if (KeyType = 'D') and (FCurrentParser.ExtractIsNull(Buffer)) then
+      PDouble(KeyBuffer)^ := 1E100;
+    Result := PrepareKey(KeyBuffer, FCurrentParser.ResultType);
+  end;
+  if not Assigned(Result) then
+    raise EDbfError.Create(STRING_INVALID_INDEX_TYPE);
   if not FCurrentParser.RawStringFields then
     TranslateString(GetACP, FCodePage, Result, Result, KeyLen);
 end;
@@ -3911,79 +3906,9 @@ begin
   else Result := 0;
 end;
 
-function TIndexFile.CompareKeysDateLevel7(Key1, Key2: PAnsiChar): Integer;
-var
-  Compare: TDateTime;
-
-  function GetVal(Key: PAnsiChar): TDateTime;
-  begin
-    SwapInt64BE(Key, @Result);
-    if TDbfFile(FDbfFile).DateTimeHandling = dtBDETimeStamp then
-      Result := BDETimeStampToDateTime(Result);
-  end;
-
+function TIndexFile.CompareKeysLevel7(Key1, Key2: PAnsiChar): Integer;
 begin
-  Compare := GetVal(Key1) - GetVal(Key2);
-  if Compare > 0 then Result := 1 else
-  if Compare < 0 then Result := -1
-  else Result := 0;
-end;
-
-function TIndexFile.CompareKeysDouble(Key1, Key2: PAnsiChar): Integer;
-var
-  X1, X2: Double;
-
-  function GetVal(Key: PAnsiChar): Double;
-  var
-    Temp: packed array[0..7] of byte;
-  begin
-    if PInt64(Key)^ <> 0 then
-    begin
-      SwapInt64BE(Key, @Temp);
-      if PInt64(@temp)^ > 0 then
-        PInt64(@temp)^ := not PInt64(@Temp)^
-      else
-        PDouble(@temp)^ := PDouble(@Temp)^ * -1;
-      Result := PDouble(@Temp)^;
-    end
-    else
-      Result := 0;
-  end;
-
-begin
-  X1 := GetVal(Key1);
-  X2 := GetVal(Key2);
-  if X1 > X2 then Result := 1
-  else if X1 < X2 then Result := -1
-  else Result := 0;
-end;
-
-function TIndexFile.CompareKeysInteger(Key1, Key2: PAnsiChar): Integer;
-var
-  N1, N2: integer;
-
-  function GetVal(Key: PAnsiChar): DWORD;
-  begin
-    Result := 0;
-    case FIndexVersion of
-      xBaseVII:
-      begin
-        if PDWORD(Key)^ <> 0 then
-        begin
-          Result := SwapIntBE(PDWORD(Key)^);
-          Result := Integer(Result xor $80000000);
-        end;
-      end;
-      xFoxPro: Result := SwapIntLE(PInteger(Key)^);
-    end;
-  end;
-
-begin
-  N1 := GetVal(Key1);
-  N2 := GetVal(Key2);
-  if N2 > N2 then Result := 1
-  else if N1 < N2 then Result := -1
-  else Result := 0;
+  Result := MemComp(Key1, Key2, KeyLen);
 end;
 
 function TIndexFile.CompareKeysNumericNDX(Key1, Key2: PAnsiChar): Integer;
@@ -4175,14 +4100,8 @@ begin
   if PIndexHdr(FIndexHeader)^.KeyType = 'D' then
     FCompareKeys := CompareKeysDate
   else
-  if PIndexHdr(FIndexHeader)^.KeyType = '@' then
-    FCompareKeys := CompareKeysDateLevel7
-  else
-  if PIndexHdr(FIndexHeader)^.KeyType = 'O' then
-    FCompareKeys := CompareKeysDouble
-  else
-  if PIndexHdr(FIndexHeader)^.KeyType in ['I', '+'] then
-    FCompareKeys := CompareKeysInteger
+  if CharInSet(PIndexHdr(FIndexHeader)^.KeyType, ['@', 'O', 'I', '+']) then
+    FCompareKeys := CompareKeysLevel7
   else
   if FIndexVersion >= xBaseIV then
     FCompareKeys := CompareKeysNumericMDX
