@@ -36,7 +36,7 @@ type
     procedure First; override;
     procedure Last; override;
 
-    procedure Insert(RecNo: Integer; Buffer: PAnsiChar);
+    procedure Insert(RecNo: Integer; Buffer: PAnsiChar; AllowKeyViolation: Boolean);
     procedure Update(RecNo: Integer; PrevBuffer, NewBuffer: PAnsiChar);
 
 {$ifdef SUPPORT_VARIANTS}
@@ -73,9 +73,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TIndexCursor.Insert(RecNo: Integer; Buffer: PAnsiChar);
+procedure TIndexCursor.Insert(RecNo: Integer; Buffer: PAnsiChar; AllowKeyViolation: Boolean);
 begin
-  TIndexFile(PagedFile).Insert(RecNo, {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ENDIF}(Buffer));
+  TIndexFile(PagedFile).Insert(RecNo, {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ENDIF}(Buffer), AllowKeyViolation);
   // TODO SET RecNo and Key
 end;
 

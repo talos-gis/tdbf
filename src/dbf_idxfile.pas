@@ -342,7 +342,7 @@ type
     procedure AddNewLevel;
     procedure UnlockHeader;
     procedure InsertError;
-    function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer): Boolean;
+    function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AllowKeyViolation: Boolean): Boolean;
     function  Update(RecNo: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     procedure Delete(RecNo: Integer; Buffer: TDbfRecordBuffer);
     function  CheckKeyViolation(Buffer: TDbfRecordBuffer): Boolean;
@@ -2840,7 +2840,7 @@ begin
     UnlockPage(0);
 end;
 
-function TIndexFile.Insert(RecNo: Integer; Buffer: TDbfRecordBuffer): Boolean; {override;}
+function TIndexFile.Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AllowKeyViolation: Boolean): Boolean; {override;}
 var
   I, curSel, count: Integer;
 begin
@@ -2857,11 +2857,12 @@ begin
     begin
       SelectIndexVars(I);
       Result := InsertKey(Buffer);
-      if not Result then
+      if (not Result) and (not AllowKeyViolation) then
       begin
         while I > 0 do
         begin
           Dec(I);
+          SelectIndexVars(I);
           DeleteKey(Buffer);
         end;
         break;
@@ -3516,7 +3517,7 @@ function TIndexFile.RecordRecalled(RecNo: Integer; Buffer: TdbfRecordBuffer): Bo
 begin
   // are we distinct -> then reinsert record in index
   FModifyMode := mmDeleteRecall;
-  Result := Insert(RecNo, Buffer);
+  Result := Insert(RecNo, Buffer, False);
   FModifyMode := mmNormal;
 end;
 

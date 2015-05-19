@@ -1377,7 +1377,7 @@ begin
         DestDbfFile.WriteRecord(lWRecNo, pDestBuff);
         // update indexes
         for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
-          TIndexFile(DestDbfFile.IndexFiles.Items[I]).Insert(lWRecNo, pDestBuff);
+          TIndexFile(DestDbfFile.IndexFiles.Items[I]).Insert(lWRecNo, pDestBuff, True);
 
         // go to next record
         Inc(lWRecNo);
@@ -2301,7 +2301,7 @@ begin
       while cur <= last do
       begin
         ReadRecord(cur, FPrevBuffer);
-        lIndexFile.Insert(cur, FPrevBuffer);
+        lIndexFile.Insert(cur, FPrevBuffer, True);
         inc(cur);
       end;
     except
@@ -2492,7 +2492,7 @@ begin
   while I < FIndexFiles.Count do
   begin
     lIndex := TIndexFile(FIndexFiles.Items[I]);
-    if not lIndex.Insert(newRecord, Buffer) then
+    if not lIndex.Insert(newRecord, Buffer, False) then
       error := ecInsert;
     if lIndex.WriteError then
       error := ecWriteIndex;
