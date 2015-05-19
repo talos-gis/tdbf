@@ -1358,18 +1358,16 @@ begin
             if TempDstDef.IsBlob and ((DbfFieldDefs = nil) or (TempDstDef.CopyFrom >= 0)) then
             begin
               // get current blob blockno
-              GetFieldData(lFieldNo, ftInteger, pBuff, @lBlobPageNo, false);
-              // valid blockno read?
-              if lBlobPageNo > 0 then
+              if GetFieldData(lFieldNo, ftInteger, pBuff, @lBlobPageNo, false) and (lBlobPageNo > 0) then
               begin
                 BlobStream.Clear;
                 FMemoFile.ReadMemo(lBlobPageNo, BlobStream);
                 BlobStream.Position := 0;
                 // always append
                 DestDbfFile.FMemoFile.WriteMemo(lBlobPageNo, 0, BlobStream);
+                // write new blockno
+                DestDbfFile.SetFieldData(lFieldNo, ftInteger, @lBlobPageNo, pDestBuff, false);
               end;
-              // write new blockno
-              DestDbfFile.SetFieldData(lFieldNo, ftInteger, @lBlobPageNo, pDestBuff, false);
             end else if (DbfFieldDefs <> nil) and (TempDstDef.CopyFrom >= 0) then
             begin
               // copy content of field
