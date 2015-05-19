@@ -35,6 +35,7 @@ uses
 
 const
   MaxIndexes = 47;
+  MaxIndexKeyLen = 100;
 
 type
   TIndexPage = class;
@@ -252,9 +253,9 @@ type
     FUniqueMode: TIndexUniqueType;
     FModifyMode: TIndexModifyMode;
     FHeaderLocked: Integer;   // used to remember which header page we have locked
-    FKeyBuffer: array[0..100] of AnsiChar;
-    FLowBuffer: array[0..100] of AnsiChar;
-    FHighBuffer: array[0..100] of AnsiChar;
+    FKeyBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
+    FLowBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
+    FHighBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
     FEntryBof: Pointer;
     FEntryEof: Pointer;
     FDbfFile: Pointer;
@@ -1759,7 +1760,7 @@ begin
   end;
 
   // check if expression not too long
-  if FResultLen > 100 then
+  if FResultLen > MaxIndexKeyLen then
     raise EDbfError.CreateFmt(STRING_INDEX_EXPRESSION_TOO_LONG, [AExpression, FResultLen]);
 end;
 
@@ -2346,16 +2347,10 @@ var
 
   procedure CheckHeaderIntegrity;
   begin
-    if integer(SwapWordLE(PIndexHdr(FIndexHeader)^.NumKeys) * 
-        SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen)) > RecordSize then
-    begin
-      // adjust index header so that integrity is correct
-      // WARNING: we can't be sure this gives a correct result, but at
-      // least we won't AV (as easily). user will probably have to regenerate this index
-      if SwapWordLE(PIndexHdr(FIndexHeader)^.KeyLen) > 100 then
-        PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(100);
-      CalcKeyProperties;
-    end;
+    if (SwapWordLE(PIndexHdr(FIndexHeader)^.KeyLen) > MaxIndexKeyLen) or (PIndexHdr(FIndexHeader)^.KeyLen = 0) then
+      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+    if Integer(SwapWordLE(PIndexHdr(FIndexHeader)^.NumKeys) * SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen)) > RecordSize then
+      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
   end;
 
 begin
@@ -3262,7 +3257,7 @@ end;
 function TIndexFile.UpdateCurrent(PrevBuffer, NewBuffer: TdbfRecordBuffer): boolean;
 var
   InsertKey, DeleteKey: PAnsiChar;
-  TempBuffer: array [0..100] of AnsiChar;
+  TempBuffer: array [0..MaxIndexKeyLen] of AnsiChar;
 begin
   Result := true;
   if FCanEdit and (PIndexHdr(FIndexHeader)^.KeyLen <> 0) then

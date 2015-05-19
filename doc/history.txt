@@ -90,6 +90,7 @@ following changes thx paulenandrew:
 - use and recognize NUL instead of space to fill empty level 7 Character (C) fields, but not level 7 C index keys (consistent with BDE)
 - fix index key violation error handling
 - preserve cursor if GetRecord finds no record
+- fix index file key length error handling, raise "Invalid MDX file." exception
 
 ------------------------
 V6.9.1

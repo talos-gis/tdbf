@@ -1955,7 +1955,7 @@ function TDbf.LocateRecordIndex(const KeyFields: String; const KeyValues: Varian
 var
   searchFlag: TSearchKeyType;
   matchRes: Integer;
-  lTempBuffer: array [0..100] of AnsiChar;
+  lTempBuffer: array [0..MaxIndexKeyLen] of AnsiChar;
   acceptable, checkmatch: boolean;
 begin
   if loPartialKey in Options then
@@ -2794,7 +2794,7 @@ end;
 
 procedure TDbf.SetRange(LowRange: Variant; HighRange: Variant; KeyIsANSI: boolean);
 var
-  LowBuf, HighBuf: array[0..100] of AnsiChar;
+  LowBuf, HighBuf: array[0..MaxIndexKeyLen] of AnsiChar;
 begin
   if (FIndexFile = nil) or VarIsNull(LowRange) or VarIsNull(HighRange) then
     exit;
@@ -2811,7 +2811,7 @@ end;
 
 procedure TDbf.SetRangePChar(LowRange: PAnsiChar; HighRange: PAnsiChar; KeyIsANSI: boolean);
 var
-  LowBuf, HighBuf: array [0..100] of AnsiChar;
+  LowBuf, HighBuf: array [0..MaxIndexKeyLen] of AnsiChar;
   LowPtr, HighPtr: PAnsiChar;
 begin
   if FIndexFile = nil then
@@ -2858,7 +2858,7 @@ end;
 
 function TDbf.SearchKey(Key: Variant; SearchType: TSearchKeyType; KeyIsANSI: boolean): Boolean;
 var
-  TempBuffer: array [0..100] of AnsiChar;
+  TempBuffer: array [0..MaxIndexKeyLen] of AnsiChar;
 begin
   if (FIndexFile = nil) or VarIsNull(Key) then
   begin
@@ -2887,7 +2887,7 @@ end;
 
 function TDbf.SearchKeyPChar(Key: PAnsiChar; SearchType: TSearchKeyType; KeyIsANSI: boolean): Boolean;
 var
-  StringBuf: array [0..100] of AnsiChar;
+  StringBuf: array [0..MaxIndexKeyLen] of AnsiChar;
 begin
   if FCursor = nil then
   begin
