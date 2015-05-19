@@ -2064,7 +2064,10 @@ begin
     PMdxHdr(Header)^.BlockAdder := SwapWordLE(1024);
     PMdxHdr(Header)^.ProdFlag := 1;
     PMdxHdr(Header)^.NumTags := 48;
-    PMdxHdr(Header)^.TagSize := 32;
+    if FIndexVersion = xBaseVII then
+      PMdxHdr(Header)^.TagSize := SizeOf(rMdx7Tag)
+    else
+      PMdxHdr(Header)^.TagSize := 32;
     PMdxHdr(Header)^.Dummy2 := 0;
     PMdxHdr(Header)^.Language := GetDbfLanguageID;
     PMdxHdr(Header)^.NumPages := SwapIntLE(HeaderSize div PageSize);  // = 4
@@ -2092,7 +2095,10 @@ begin
     // clear roots
     ClearRoots;
     // init vars
-    FTagSize := 32;
+    if FIndexVersion = xBaseVII then
+      FTagSize := SizeOf(rMdx7Tag)
+    else
+      FTagSize := 32;
     FTagOffset := 544;
     // clear entries
     RecordCount := SwapIntLE(PMdxHdr(Header)^.NumPages);
