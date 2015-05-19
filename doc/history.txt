@@ -94,6 +94,7 @@ following changes thx paulenandrew:
 - fix Integer overflow errors if more than 2,147,483,648 entries in an index file (requires compiler to support Int64)
 - fix inaccurate floating point values in numeric index
 - consistently use EParserException for parser error
+- fix error handling if invalid record number in index
 
 ------------------------
 V6.9.1

@@ -3685,10 +3685,10 @@ var
 begin
   // save current recno, find different next!
   curRecNo := FLeaf.PhysicalRecNo;
-  repeat
-    // return false if we are at first entry
-    Result := FLeaf.RecurPrev;
-  until not Result or (curRecNo <> FLeaf.PhysicalRecNo);
+  // return false if we are at first entry
+  Result := FLeaf.RecurPrev;
+  if Result and ((FLeaf.PhysicalRecNo = curRecNo) or (not TDbfFile(FDbfFile).IsRecordPresent(FLeaf.PhysicalRecNo))) then
+    raise EDbfError.Create(STRING_INVALID_MDX_FILE);
 end;
 
 function TIndexFile.WalkNext: boolean;
@@ -3697,10 +3697,10 @@ var
 begin
   // save current recno, find different prev!
   curRecNo := FLeaf.PhysicalRecNo;
-  repeat
-    // return false if we are at last entry
-    Result := FLeaf.RecurNext;
-  until not Result or (curRecNo <> FLeaf.PhysicalRecNo);
+  // return false if we are at last entry
+  Result := FLeaf.RecurNext;
+  if Result and ((FLeaf.PhysicalRecNo = curRecNo) or (not TDbfFile(FDbfFile).IsRecordPresent(FLeaf.PhysicalRecNo))) then
+    raise EDbfError.Create(STRING_INVALID_MDX_FILE);
 end;
 
 function TIndexFile.Prev: Boolean;
