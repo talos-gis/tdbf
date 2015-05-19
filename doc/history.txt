@@ -82,6 +82,7 @@ following changes thx paulenandrew:
 - fix ordering of floating point numeric index
 - ensure GetCanModify returns False if table is not Active
 - fix Division by zero error if index file block size is 0, raise "Invalid MDX. file" exception
+- fix record count in DBF header (was not working as intended)
 
 ------------------------
 V6.9.1

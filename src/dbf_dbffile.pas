@@ -444,17 +444,6 @@ begin
         FForceClose := true;
         exit;
       end;
-      // check if specified recordcount correct
-      if PDbfHdr(Header)^.RecordCount <> RecordCount then
-      begin
-        // This message was annoying
-        // and was not understood by most people
-        // ShowMessage('Invalid Record Count,'+^M+
-        //             'RecordCount in Hdr : '+IntToStr(PDbfHdr(Header).RecordCount)+^M+
-        //             'expected : '+IntToStr(RecordCount));
-        PDbfHdr(Header)^.RecordCount := RecordCount;
-        lModified := true;
-      end;
       // determine codepage
       if FDbfVersion >= xBaseVII then
       begin
@@ -501,6 +490,12 @@ begin
         FUseCodePage := DbfGlobals.DefaultOpenCodePage;
       // get list of fields
       ConstructFieldDefs;
+      // check if specified recordcount correct
+      if PDbfHdr(Header)^.RecordCount <> RecordCount then
+      begin
+        PDbfHdr(Header)^.RecordCount := RecordCount;
+        lModified := true;
+      end;
       // open blob file if present
       lMemoFileName := ChangeFileExt(FileName, GetMemoExt);
       if HasBlob then
