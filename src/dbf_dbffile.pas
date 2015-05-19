@@ -832,12 +832,15 @@ end;
 
 procedure TDbfFile.Zap;
 begin
+  FlushBuffer;
+  UpdateBufferSize;
   // make recordcount zero
   RecordCount := 0;
   // update recordcount
   PDbfHdr(Header)^.RecordCount := RecordCount;
   // update disk header
   WriteHeader;
+  FlushHeader;
   // update indexes
   RegenerateIndexes;
 end;

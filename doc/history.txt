@@ -74,6 +74,7 @@ following changes thx paulenandrew:
 - if size of tags in index file is too large, raise "Invalid MDX file." exception
 - fix potential Range Check Error when deleting an entry from an index
 - maintain linked list in tag table (compatibility with BDE and other engines)
+- fix Zap leaving cached data in the file
 
 ------------------------
 V6.9.1
