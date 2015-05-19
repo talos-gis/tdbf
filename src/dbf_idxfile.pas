@@ -2995,7 +2995,7 @@ begin
         etFloat:
           begin
             ExtValue := PDouble(Buffer)^;
-            FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 9999, 15);
+            FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 15, 999);
             if ExtValue <> 0.0 then
               NumDecimals := dbfStrLen(PAnsiChar(@FloatRec.Digits[0]))
             else
