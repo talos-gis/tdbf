@@ -2311,7 +2311,7 @@ end;
 
 function TDbf.GetCanModify: Boolean; {override;}
 begin
-  if FReadOnly or (csDesigning in ComponentState) then
+  if FReadOnly or (csDesigning in ComponentState) or (not Active) then
     Result := false
   else
     Result := FTranslationMode > tmNoneAvailable;

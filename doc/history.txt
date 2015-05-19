@@ -80,6 +80,7 @@ following changes thx paulenandrew:
 - create FoxPro DBF file with VerDBF = $30 ($02 is not compatible with BDE or Visual FoxPro 6.0)
 - fix access is denied error trying to write corrections to the DBF header when opening read only
 - fix ordering of floating point numeric index
+- ensure GetCanModify returns False if table is not Active
 
 ------------------------
 V6.9.1
