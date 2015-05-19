@@ -228,7 +228,7 @@ begin
   begin
     // copy field data
     Len := FieldDef.Size;
-    while (Len >= 1) and (Src[Len-1] = ' ') do Dec(Len);
+    while (Len >= 1) and ((Src[Len-1] = ' ') or (Src[Len-1] = #0)) do Dec(Len);
     // translate to ANSI
     Len := TranslateString(DbfFile.UseCodePage, GetACP, Src, FFieldVal, Len);
     FFieldVal[Len] := #0;

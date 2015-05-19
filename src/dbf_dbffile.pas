@@ -111,6 +111,7 @@ type
       Src, Dst: Pointer; NativeFormat: boolean): Boolean;
     procedure SetFieldData(Column: Integer; DataType: TFieldType; Src,Dst: Pointer; NativeFormat: boolean);
     procedure InitRecord(DestBuf: PAnsiChar);
+    procedure InitRecordForIndex(DestBuf: PAnsiChar);
     procedure PackIndex(lIndexFile: TIndexFile; AIndexName: string);
     procedure RegenerateIndexes;
     procedure LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
@@ -1649,7 +1650,7 @@ begin
     //    SetString(s, PChar(Src) + FieldOffset, FieldSize );
     //    s := {TrimStr(s)} TrimRight(s);
     // truncate spaces at end by shortening fieldsize
-    while (FieldSize > 0) and ((PAnsiChar(Src) + FieldSize - 1)^ = ' ') do
+    while (FieldSize > 0) and (((PAnsiChar(Src) + FieldSize - 1)^ = ' ') or ((PAnsiChar(Src) + FieldSize - 1)^ = #0)) do
       dec(FieldSize);
     // if not string field, truncate spaces at beginning too
     if DataType <> ftString then
@@ -1913,7 +1914,10 @@ begin
   begin
     if Src = nil then
     begin
-      FillChar(Dst^, FieldSize, ' ');
+      if (FDbfVersion >= xBaseVII) and (DataType=ftString) then
+        FillChar(Dst^, FieldSize, #0)
+      else
+        FillChar(Dst^, FieldSize, ' ');
     end else begin
       case DataType of
         ftBoolean:
@@ -1990,7 +1994,8 @@ begin
     TempFieldDef := FFieldDefs.Items[I];
     // binary field? (foxpro memo fields are binary, but dbase not)
     if CharInSet(TempFieldDef.NativeFieldType, ['I', 'O', '@', '+', '0', 'Y'])
-        or ((TempFieldDef.NativeFieldType = 'M') and (TempFieldDef.Size = 4)) then
+        or ((TempFieldDef.NativeFieldType = 'M') and (TempFieldDef.Size = 4))
+        or ((FDbfVersion >= xBaseVII) and (TempFieldDef.NativeFieldType='C') and (not TempFieldDef.HasDefault)) then
       FillChar(PAnsiChar(FDefaultBuffer+TempFieldDef.Offset)^, TempFieldDef.Size, 0); // Was PChar
     // copy default value?
     if TempFieldDef.HasDefault then
@@ -2008,6 +2013,20 @@ begin
   if FDefaultBuffer = nil then
     InitDefaultBuffer;
   Move(FDefaultBuffer^, DestBuf^, RecordSize);
+end;
+
+procedure TDbfFile.InitRecordForIndex(DestBuf: PChar);
+var
+  I: Integer;
+  TempFieldDef: TDbfFieldDef;
+begin
+  InitRecord(DestBuf);
+  for I := 0 to FFieldDefs.Count - 1 do
+  begin
+    TempFieldDef := FFieldDefs.Items[I];
+    if (FDbfVersion >= xBaseVII) and (TempFieldDef.NativeFieldType='C') and (not TempFieldDef.HasDefault) then
+      FillChar(PAnsiChar(FDefaultBuffer+TempFieldDef.Offset)^, TempFieldDef.Size, ' ');
+  end;
 end;
 
 procedure TDbfFile.ApplyAutoIncToBuffer(DestBuf: TDbfRecordBuffer);

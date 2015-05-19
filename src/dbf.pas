@@ -3022,6 +3022,7 @@ function TDbf.InitKeyBuffer(Buffer: PAnsiChar): PAnsiChar;
 begin
   FillChar(Buffer^, RecordSize, 0);
   InitRecord(Buffer);
+  FDbfFile.InitRecordForIndex(Buffer);
   Result := Buffer;
 end;
 

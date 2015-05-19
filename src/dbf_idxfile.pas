@@ -1751,6 +1751,7 @@ begin
     GetMem(TempBuffer, TDbfFile(DbfFile).RecordSize);
     try
       TDbfFile(DbfFile).InitRecord(TempBuffer);
+      TDbfFile(DbfFile).InitRecordForIndex(TempBuffer);
       FResultLen := dbfStrLen(ExtractFromBuffer(TempBuffer));
     finally
       FreeMem(TempBuffer);
