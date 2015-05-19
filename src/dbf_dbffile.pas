@@ -232,12 +232,15 @@ var
 begin
   // temp null-term string
   endChar := (PAnsiChar(Src) + Size)^;
-  (PAnsiChar(Src) + Size)^ := #0;
-  // convert to double
-  if not dbfTextToFloatFmt(PAnsiChar(Src), Result, fvExtended, FORMAT_SETTINGS_DECIMAL_POINT) then
-    Result := 0;
-  // restore Char of null-term
-  (PAnsiChar(Src) + Size)^ := endChar;
+  try
+    (PAnsiChar(Src) + Size)^ := #0;
+    // convert to double
+    if not dbfTextToFloatFmt(PAnsiChar(Src), Result, fvExtended, FORMAT_SETTINGS_DECIMAL_POINT) then
+      Result := 0;
+    // restore Char of null-term
+  finally
+    (PAnsiChar(Src) + Size)^ := endChar;
+  end;
 end;
 {$else SUPPORT_FORMATSETTINGSTYPE}
 function DbfStrToFloat(const Src: PAnsiChar; const Size: Integer): Extended; // Was PChar
@@ -248,27 +251,30 @@ var
 begin
   // temp null-term string
   endChar := (PAnsiChar(Src) + Size)^;
-  (PAnsiChar(Src) + Size)^ := #0;
-  // we only have to convert if decimal separator different
-  if DecimalSeparator <> sDBF_DEC_SEP then
-  begin
-    // search dec sep
-    iPos := dbfStrScan(Src, AnsiChar(sDBF_DEC_SEP));
-    // replace
+  try
+    (PAnsiChar(Src) + Size)^ := #0;
+    // we only have to convert if decimal separator different
+    if DecimalSeparator <> sDBF_DEC_SEP then
+    begin
+      // search dec sep
+      iPos := dbfStrScan(Src, AnsiChar(sDBF_DEC_SEP));
+      // replace
+      if iPos <> nil then
+        iPos^ := AnsiChar(DecimalSeparator);
+    end else
+      iPos := nil;
+    // convert to double
+    if dbfTextToFloat(Src, eValue {$ifndef VER1_0}, fvExtended{$endif}) then
+      Result := eValue
+    else
+      Result := 0;
+    // restore dec sep
     if iPos <> nil then
-      iPos^ := AnsiChar(DecimalSeparator);
-  end else
-    iPos := nil;
-  // convert to double
-  if dbfTextToFloat(Src, eValue {$ifndef VER1_0}, fvExtended{$endif}) then
-    Result := eValue
-  else
-    Result := 0;
-  // restore dec sep
-  if iPos <> nil then
-    iPos^ := sDBF_DEC_SEP;
-  // restore Char of null-term
-  (PAnsiChar(Src) + Size)^ := endChar;
+      iPos^ := sDBF_DEC_SEP;
+    // restore Char of null-term
+  finally
+    (PAnsiChar(Src) + Size)^ := endChar;
+  end;
 end;
 {$endif SUPPORT_FORMATSETTINGS}
 
