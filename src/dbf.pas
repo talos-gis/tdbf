@@ -1710,6 +1710,7 @@ begin
 
     CreateTableEx(lFieldDefs);
     Open;
+    FDbfFile.InCopyFrom := True;
     DataSet.First;
 {$ifdef USE_CACHE}
     FDbfFile.BufferAhead := true;
@@ -1751,6 +1752,7 @@ begin
       TDbf(DataSet).DbfFile.BufferAhead := false;
 {$endif}      
     FInCopyFrom := false;
+    FDbfFile.InCopyFrom := False;
     lFieldDefs.Free;
     lPhysFieldDefs.Free;
   end;

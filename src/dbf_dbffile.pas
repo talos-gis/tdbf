@@ -63,6 +63,7 @@ type
     FAutoIncPresent: Boolean;
     FCopyDateTimeAsString: Boolean;
     FDateTimeHandling: TDateTimeHandling;
+    FInCopyFrom: Boolean;
     FOnLocaleError: TDbfLocaleErrorEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
 
@@ -132,6 +133,7 @@ type
     property ForceClose: Boolean read FForceClose;
     property CopyDateTimeAsString: Boolean read FCopyDateTimeAsString write FCopyDateTimeAsString;
     property DateTimeHandling: TDateTimeHandling read FDateTimeHandling write FDateTimeHandling;
+    property InCopyFrom: Boolean write FInCopyFrom;
 
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
@@ -2462,7 +2464,8 @@ begin
   while not LockPage(newRecord, false) do
     Inc(newRecord);
   // write autoinc value
-  ApplyAutoIncToBuffer(Buffer);
+  if not FInCopyFrom then
+    ApplyAutoIncToBuffer(Buffer);
   error := ecNone;
   I := 0;
   while I < FIndexFiles.Count do

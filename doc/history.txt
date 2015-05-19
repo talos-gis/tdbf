@@ -64,6 +64,7 @@ following changes thx paulenandrew:
 - Add support for SetKey, GotoKey and GotoNearest
 - Maintain IndexDefs when DeleteIndex is used to delete an index
 - Add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
+- preserve autoincrement field values in TDbf.CopyFrom
 
 ------------------------
 V6.9.1
