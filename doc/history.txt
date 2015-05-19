@@ -86,6 +86,7 @@ following changes thx paulenandrew:
 - add support for files larger than 4 GB (requires compiler to support Int64)
 - add support for building/maintaining Date (D) index
 - fix calculation of tag offset in index file
+- fix access violation closing a table that is locked without explicitly unlocking
 
 ------------------------
 V6.9.1

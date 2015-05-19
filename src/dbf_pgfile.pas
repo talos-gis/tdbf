@@ -810,7 +810,10 @@ end;
 
 function TPagedFile.UnlockSection(const Offset: TPagedFileSize; const Length: Cardinal): Boolean;
 begin
-  Result := UnlockFile(TFileStream(FStream).Handle, ULARGE_INTEGER(Offset).LowPart, ULARGE_INTEGER(Offset).HighPart, Length, 0);
+  if Assigned(FStream) then
+    Result := UnlockFile(TFileStream(FStream).Handle, ULARGE_INTEGER(Offset).LowPart, ULARGE_INTEGER(Offset).HighPart, Length, 0)
+  else
+    Result := True;
 end;
 
 function TPagedFile.LockAllPages(const Wait: Boolean): Boolean;
