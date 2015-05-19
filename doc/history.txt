@@ -76,6 +76,7 @@ following changes thx paulenandrew:
 - maintain linked list in tag table (compatibility with BDE and other engines)
 - fix Zap leaving cached data in the file
 - fix copying of memo file data when restructuring
+- open FoxPro MDX index file (FoxPro CDX index file still not supported)
 
 ------------------------
 V6.9.1

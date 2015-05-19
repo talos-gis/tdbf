@@ -538,7 +538,7 @@ begin
           end;
         end;
       // check if mdx flagged
-      if (FDbfVersion <> xFoxPro) and (PDbfHdr(Header)^.MDXFlag <> 0) then
+      if PDbfHdr(Header)^.MDXFlag <> 0 then
       begin
         // open mdx file if present
         lMdxFileName := ChangeFileExt(FileName, '.mdx');
