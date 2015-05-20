@@ -270,7 +270,7 @@ type
     FUpdateMode: TIndexUpdateMode;
     FUserKey: PAnsiChar;        // find / insert key
     FUserRecNo: Integer;    // find / insert recno
-    FUserBCD: array[0..10] of Byte;
+    FUserBCD: array[0..11] of Byte;
     FUserNumeric: Double;
     FForceClose: Boolean;
     FForceReadOnly: Boolean;
@@ -364,6 +364,7 @@ type
     procedure CreateIndex(FieldDesc, TagName: string; Options: TIndexOptions);
     function  ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
     procedure ExtractKey(Key: PAnsiChar);
+    function  CopyCurrentKey(Source, Dest: PAnsiChar): Integer;
     function  SearchKey(Key: PAnsiChar; SearchType: TSearchKeyType): Boolean;
     function  Find(RecNo: Integer; Buffer: PAnsiChar): Integer;
     function  IndexOf(const AIndexName: string): Integer;
@@ -979,7 +980,6 @@ var
 {$ifdef TDBF_INDEX_CHECK}
   prevKeyData, curKeyData, nextKeyData: PAnsiChar;
 {$endif}
-  Len: Word;
 begin
   // get num entries
   keyData := GetKeyData;
@@ -987,23 +987,10 @@ begin
   assert((EntryNo >= 0) and (EntryNo <= FHighIndex));
   if (UpperPage <> nil) and (FEntryNo = FHighIndex) then
     UpperPage.SetEntry(0, AKey, FPageNo);
-{  if PIndexHdr(FIndexFile.IndexHeader).KeyType = 'C' then  }
-  Len := SwapWordLE(PIndexHdr(FIndexFile.IndexHeader)^.KeyLen);
   if AKey <> nil then
-    begin
-      Move(AKey^, keyData^, Len);
-      if (PIndexHdr(FIndexFile.IndexHeader).KeyType = 'C') and (Len <> 0) then
-        ExprTrailingNulsToSpace(keyData, Len);
-    end
-    else
-      PAnsiChar(keyData)^ := #0;
-{
+    FIndexFile.CopyCurrentKey(AKey, keyData)
   else
-    if AKey <> nil then
-      PDouble(keyData)^ := PDouble(AKey)^
-    else
-      PDouble(keyData)^ := 0.0;
-}
+    PAnsiChar(keyData)^ := #0;
   // set entry info
   SetRecLowerPageNo(RecNo, LowerPageNo);
   // flag we modified the page
@@ -3128,6 +3115,22 @@ end;
 procedure TIndexFile.ExtractKey(Key: PAnsiChar);
 begin
   Move(FLeaf.Key^, Key^, KeyLen);
+end;
+
+function TIndexFile.CopyCurrentKey(Source, Dest: PAnsiChar): Integer;
+begin
+  Result := KeyLen;
+  FillChar(Dest^, Result, 0);
+  if (Source <> nil) then
+  begin
+    if (FCurrentParser.ResultType = etString) and (Result > FCurrentParser.ResultBufferSize) then
+      Result := FCurrentParser.ResultBufferSize;
+    Move(Source^, Dest^, Result);
+  end
+  else
+    Result := 0;
+  if (PIndexHdr(IndexHeader).KeyType = 'C') and (Result <> 0) then
+    ExprTrailingNulsToSpace(Dest, Result);
 end;
 
 function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}): boolean;

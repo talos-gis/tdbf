@@ -33,6 +33,7 @@ type
     FPartialMatch: boolean;
 
     function GetDbfFieldDef: TDbfFieldDef;
+    function GetResultBufferSize: Integer;
   protected
     FCurrentExpression: string;
 
@@ -61,6 +62,7 @@ type
     property DbfFile: Pointer read FDbfFile write FDbfFile;
     property Expression: string read FCurrentExpression;
     property ResultLen: Integer read GetResultLen;
+    property ResultBufferSize: Integer read GetResultBufferSize;
 
     property CaseInsensitive: Boolean read FCaseInsensitive write SetCaseInsensitive;
     property RawStringFields: Boolean read FRawStringFields write SetRawStringFields;
@@ -629,6 +631,14 @@ begin
     FieldVar:= TFieldVar(FFieldVarList.Objects[0]);
     Result := FieldVar.FieldDef;
   end;
+end;
+
+function TDbfParser.GetResultBufferSize: Integer;
+begin
+  if ResultLen>=0 then
+    Result:= ResultLen
+  else
+    Result:= ExpResultSize;
 end;
 
 end.

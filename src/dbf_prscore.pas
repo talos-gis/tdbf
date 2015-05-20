@@ -75,6 +75,7 @@ type
     procedure DisposeTree(ExprRec: PExpressionRec);
     function CurrentExpression: string; virtual; abstract;
     function GetResultType: TExpressionType; virtual;
+    property ExpResultSize: Integer read fExpResultSize;
 
     property CurrentRec: PExpressionRec read FCurrentRec write FCurrentRec;
     property LastRec: PExpressionRec read FLastRec write FLastRec;
@@ -309,6 +310,7 @@ begin
   GetMem(FExpResult, ArgAllocSize);
   FExpResultPos := FExpResult;
   FExpResultSize := ArgAllocSize;
+  FillChar(FExpResultPos^, FExpResultSize, 0);
   FOptimize := true;
   FillExpressList;
 end;

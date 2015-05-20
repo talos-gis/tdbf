@@ -1065,6 +1065,7 @@ end;
 procedure TDynamicType.Rewind;
 begin
   FMemoryPos^ := FMemory^;
+  FillChar(FMemory^^, FSize^, 0);
 end;
 
 procedure TDynamicType.AssureSpace(ASize: Integer);
@@ -1087,6 +1088,7 @@ begin
     NewSize := NewSize div ArgAllocSize * ArgAllocSize + ArgAllocSize;
   // create new buffer
   GetMem(tempBuf, NewSize);
+  FillChar(tempBuf^, NewSize, 0);
   // copy memory
   bytesCopy := FSize^;
   if bytesCopy > NewSize then
