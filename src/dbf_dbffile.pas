@@ -74,7 +74,8 @@ type
 
     function GetLanguageId: Integer;
     function GetLanguageStr: AnsiString;
-    
+
+    procedure WriteEofTerminator;
   protected
     procedure ConstructFieldDefs;
     procedure InitDefaultBuffer;
@@ -883,7 +884,6 @@ procedure TDbfFile.WriteHeader;
 var
   SystemTime: TSystemTime;
   lDataHdr: PDbfHdr;
-  EofTerminator: Byte;
 begin
   if (HeaderSize=0) then
     exit;
@@ -897,8 +897,9 @@ begin
 //  lDataHdr.RecordCount := RecordCount;
   inherited WriteHeader;
 
-  EofTerminator := $1A;
-  WriteBlock(@EofTerminator, 1, CalcPageOffset(RecordCount+1));
+  // write EOF terminator
+  if RecordCount = 0 then
+    WriteEofTerminator;
 end;
 
 procedure TDbfFile.ConstructFieldDefs;
@@ -1094,6 +1095,14 @@ function TDbfFile.GetLanguageStr: AnsiString;
 begin
   if FDbfVersion >= xBaseVII then
     Result := PAfterHdrVII(PAnsiChar(Header) + SizeOf(rDbfHdr))^.LanguageDriverName; // Was PChar
+end;
+
+procedure TDbfFile.WriteEofTerminator;
+var
+  EofTerminator: Byte;
+begin
+  EofTerminator := $1A;
+  WriteBlock(@EofTerminator, SizeOf(EofTerminator), CalcPageOffset(RecordCount + 1));
 end;
 
 {
@@ -2586,6 +2595,8 @@ begin
     WriteLockInfo(Buffer);
   // write buffer to disk
   WriteRecord(newRecord, Buffer);
+  // write EOF terminator
+  WriteEofTerminator;
   // done updating, unlock
   UnlockPage(newRecord);
   // error occurred while writing?
