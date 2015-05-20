@@ -237,6 +237,7 @@ type
     function  ReadCurrentRecord(Buffer: TDbfRecordBuffer; var Acceptable: Boolean): TGetResult;
     function  SearchKeyBuffer(Buffer: PAnsiChar; SearchType: TSearchKeyType): Boolean;
     procedure SetRangeBuffer(LowRange: PAnsiChar; HighRange: PAnsiChar);
+    procedure UpdateLock;
 
   protected
     { abstract methods }
@@ -1273,6 +1274,7 @@ begin
     // now we know for sure the file exists
     InitDbfFile(DbfOpenMode[FReadOnly, FExclusive]);
     FDbfFile.Open;
+    UpdateLock;
 
     // fail open?
   {$ifndef FPC}
@@ -1410,12 +1412,14 @@ function TDbf.LockTable(const Wait: Boolean): Boolean;
 begin
   CheckActive;
   Result := FDbfFile.LockAllPages(Wait);
+  UpdateLock;
 end;
 
 procedure TDbf.UnlockTable;
 begin
   CheckActive;
   FDbfFile.UnlockAllPages;
+  UpdateLock;
 end;
 
 procedure TDbf.InternalEdit;
@@ -1589,6 +1593,7 @@ begin
       FDbfFile.FileLangID := FLanguageID;
       FDbfFile.Open;
       FDbfFile.FinishCreate(ADbfFieldDefs, 512);
+      UpdateLock;
 
       // if creating memory table, copy stream pointer
       if FStorage = stoMemory then
@@ -1652,6 +1657,7 @@ begin
   // open dbf file
   InitDbfFile(pfExclusiveOpen);
   FDbfFile.Open;
+  UpdateLock;
 
   // do restructure
   try
@@ -2073,6 +2079,7 @@ begin
     FExclusive := true;
     FReadOnly := false;
   end;
+  UpdateLock;
 end;
 
 procedure TDbf.EndExclusive;
@@ -2088,6 +2095,7 @@ begin
     // just set exclusive to false
     FExclusive := false;
   end;
+  UpdateLock;
 end;
 
 function TDbf.CreateBlobStream(Field: TField; Mode: TBlobStreamMode): TStream; {override virtual}
@@ -2801,6 +2809,15 @@ begin
   // go to first in this range
   if Active then
     inherited First;
+end;
+
+procedure TDbf.UpdateLock;
+begin
+  if Assigned(DbfFile) then
+  begin
+    DbfFile.UpdateLock;
+    DisableResyncOnPost := (not DbfFile.IsSharedAccess) or DbfFile.FileLocked;
+  end;
 end;
 
 {$ifdef SUPPORT_VARIANTS}

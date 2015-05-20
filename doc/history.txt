@@ -110,6 +110,7 @@ following changes thx paulenandrew:
 - fix incorrect parser linked list
 - if there is a file read/write error, raise an exception
 - Change index locking algorithm to avoid resyncs, achieves much better performance (consistent with BDE)
+- Use BufferAhead and DisableResyncOnPost by default when table is exclusive or write locked, achieves much better performance
 
 ------------------------
 V6.9.1

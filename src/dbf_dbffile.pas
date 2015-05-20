@@ -90,6 +90,7 @@ type
     procedure Close;
     procedure Zap;
     procedure DeleteMdxFile;
+    procedure UpdateLock;
 
     procedure FinishCreate(AFieldDefs: TDbfFieldDefs; MemoSize: Integer);
     function GetIndexByName(AIndexName: string): TIndexFile;
@@ -878,6 +879,15 @@ begin
   PDbfHdr(Header)^.MDXFlag := 0;
   WriteHeader;
   DeleteIndexFile(MdxFile);
+end;
+
+procedure TDbfFile.UpdateLock;
+begin
+{$ifdef USE_CACHE}
+  BufferAhead := True;
+{$else}
+  BufferAhead := (not IsSharedAccess) or FFileLocked;
+{$endif}
 end;
 
 procedure TDbfFile.WriteHeader;
