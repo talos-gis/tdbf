@@ -294,9 +294,9 @@ type
     procedure LinkTags;
 
     function  FindKey(AInsert: boolean): Integer;
-    function  InsertKey(Buffer: TDbfRecordBuffer): Boolean;
+    function  InsertKey(Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
     procedure DeleteKey(Buffer: TDbfRecordBuffer);
-    function  InsertCurrent: Boolean;
+    function  InsertCurrent(AUniqueMode: TIndexUniqueType): Boolean;
     function  DeleteCurrent: Boolean;
     function  UpdateCurrent(PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     function  UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
@@ -349,7 +349,7 @@ type
     procedure AddNewLevel;
     procedure UnlockHeader;
     procedure InsertError;
-    function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AllowKeyViolation: Boolean): Boolean;
+    function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
     function  Update(RecNo: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     procedure Delete(RecNo: Integer; Buffer: TDbfRecordBuffer);
     function  CheckKeyViolation(Buffer: TDbfRecordBuffer): Boolean;
@@ -2889,7 +2889,7 @@ begin
     UnlockPage(0);
 end;
 
-function TIndexFile.Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AllowKeyViolation: Boolean): Boolean; {override;}
+function TIndexFile.Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean; {override;}
 var
   I, curSel, count: Integer;
 begin
@@ -2905,8 +2905,8 @@ begin
     while I < count do
     begin
       SelectIndexVars(I);
-      Result := InsertKey(Buffer);
-      if (not Result) and (not AllowKeyViolation) then
+      Result := InsertKey(Buffer, AUniqueMode);
+      if not Result then
       begin
         while I > 0 do
         begin
@@ -2921,7 +2921,7 @@ begin
     // restore previous selected index
     SelectIndexVars(curSel);
   end else begin
-    Result := InsertKey(Buffer);
+    Result := InsertKey(Buffer, AUniqueMode);
   end;
 
   // check range, disabled by insert
@@ -2934,7 +2934,7 @@ var
 begin
   Result := false;
   FUserRecNo := -2;
-  if FIndexVersion = xBaseIV then
+  if FIndexVersion >= xBaseIV then
   begin
     curSel := FSelectedIndex;
     for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
@@ -3136,7 +3136,7 @@ begin
     ExprTrailingNulsToSpace(Dest, Result);
 end;
 
-function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}): boolean;
+function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}; AUniqueMode: TIndexUniqueType): boolean;
 begin
   Result := true;
   // ignore deleted records
@@ -3149,25 +3149,25 @@ begin
     // get key from buffer
     FUserKey := ExtractKeyFromBuffer(Buffer);
     // patch through
-    Result := InsertCurrent;
+    Result := InsertCurrent(AUniqueMode);
   end;
 end;
 
-function TIndexFile.InsertCurrent: boolean;
+function TIndexFile.InsertCurrent(AUniqueMode: TIndexUniqueType): boolean;
   // insert in current index
   // assumes: FUserKey is an OEM key
 begin
   // only insert if not recalling or mode = distinct
   // modify = mmDeleteRecall /\ unique <> distinct -> key already present
   Result := true;
-  if (FModifyMode <> mmDeleteRecall) or (FUniqueMode = iuDistinct) then
+  if (FModifyMode <> mmDeleteRecall) or (AUniqueMode = iuDistinct) then
   begin
     // temporarily remove range to find correct location of key
     ResetRange;
     // find this record as closely as possible
     // if result = 0 then key already exists
     // if unique index, then don't insert key if already present
-    if (FindKey(true) <> 0) or (FUniqueMode = iuNormal) then
+    if (FindKey(true) <> 0) or (AUniqueMode = iuNormal) then
     begin
       // if we found eof, write to pagebuffer
       FLeaf.GotoInsertEntry;
@@ -3175,7 +3175,7 @@ begin
       FLeaf.LocalInsert(FUserRecNo, FUserKey, 0);
     end else begin
       // key already exists -> test possible key violation
-      if FUniqueMode = iuDistinct then
+      if AUniqueMode = iuDistinct then
       begin
         // raising -> reset modify mode
         FModifyMode := mmNormal;
@@ -3343,11 +3343,11 @@ begin
       if Result then
       begin
         FUserKey := InsertKey;
-        Result := InsertCurrent;
+        Result := InsertCurrent(FUniqueMode);
         if not Result then
         begin
           FUserKey := DeleteKey;
-          InsertCurrent;
+          InsertCurrent(iuNormal);
           FUserKey := InsertKey;
         end;
       end;
@@ -3584,7 +3584,7 @@ function TIndexFile.RecordRecalled(RecNo: Integer; Buffer: TdbfRecordBuffer): Bo
 begin
   // are we distinct -> then reinsert record in index
   FModifyMode := mmDeleteRecall;
-  Result := Insert(RecNo, Buffer, False);
+  Result := Insert(RecNo, Buffer, FUniqueMode);
   FModifyMode := mmNormal;
 end;
 

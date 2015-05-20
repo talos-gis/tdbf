@@ -1241,6 +1241,8 @@ var
   pBuff, pDestBuff: TDbfRecordBuffer;
   RestructFieldInfo: PRestructFieldInfo;
   BlobStream: TMemoryStream;
+  lIndexFile: TIndexFile;
+  lUniqueMode: TIndexUniqueType;
 begin
   // nothing to do?
   if (RecordSize < 1) or ((DbfFieldDefs = nil) and not Pack) then
@@ -1415,7 +1417,14 @@ begin
         DestDbfFile.WriteRecord(lWRecNo, pDestBuff);
         // update indexes
         for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
-          TIndexFile(DestDbfFile.IndexFiles.Items[I]).Insert(lWRecNo, pDestBuff, True);
+        begin
+          lIndexFile := TIndexFile(DestDbfFile.IndexFiles.Items[I]);
+          if lIndexFile.UniqueMode = iuUnique then
+            lUniqueMode := iuDistinct
+          else
+            lUniqueMode := lIndexFile.UniqueMode;
+          lIndexFile.Insert(lWRecNo, pDestBuff, lUniqueMode);
+        end;
 
         // go to next record
         Inc(lWRecNo);
@@ -2302,6 +2311,7 @@ var
 {$ifdef USE_CACHE}
   prevCache: Integer;
 {$endif}
+  lUniqueMode: TIndexUniqueType;
 begin
   // save current mode in case we change it
   prevMode := lIndexFile.UpdateMode;
@@ -2334,10 +2344,14 @@ begin
 {$endif}
   try
     try
+      if lIndexFile.UniqueMode = iuUnique then
+        lUniqueMode := iuDistinct
+      else
+        lUniqueMode := lIndexFile.UniqueMode;
       while cur <= last do
       begin
         ReadRecord(cur, FPrevBuffer);
-        lIndexFile.Insert(cur, FPrevBuffer, True);
+        lIndexFile.Insert(cur, FPrevBuffer, lUniqueMode);
         inc(cur);
       end;
     except
@@ -2528,7 +2542,7 @@ begin
   while I < FIndexFiles.Count do
   begin
     lIndex := TIndexFile(FIndexFiles.Items[I]);
-    if not lIndex.Insert(newRecord, Buffer, False) then
+    if not lIndex.Insert(newRecord, Buffer, lIndex.UniqueMode) then
       error := ecInsert;
     if lIndex.WriteError then
       error := ecWriteIndex;

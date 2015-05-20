@@ -88,7 +88,7 @@ following changes thx paulenandrew:
 - fix calculation of tag offset in index file
 - fix access violation closing a table that is locked without explicitly unlocking
 - use and recognize NUL instead of space to fill empty level 7 Character (C) fields, but not level 7 C index keys (consistent with BDE)
-- fix index key violation error handling
+- fix error handling and potential access violation when there is an index key violation
 - preserve cursor if GetRecord finds no record
 - fix index file key length error handling, raise "Invalid MDX file." exception
 - fix Integer overflow errors if more than 2,147,483,648 entries in an index file (requires compiler to support Int64)
