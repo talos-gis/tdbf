@@ -101,6 +101,7 @@ following changes thx paulenandrew:
 - add OnIndexInvalidEvent - set Handled to continue anyway, DeleteLink to clear MDX flag
 - fix problems if index key length does not match parser result length
 - fix error handling updating an index
+- fix potential access violation if TDBF_INDEX_CHECK is defined
 
 ------------------------
 V6.9.1

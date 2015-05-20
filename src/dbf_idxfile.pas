@@ -999,12 +999,11 @@ begin
 {$ifdef TDBF_INDEX_CHECK}
 
     // check sorted entry sequence
-    prevKeyData := GetKeyDataFromEntry(FEntryNo-1);
     curKeyData  := GetKeyDataFromEntry(FEntryNo+0);
-    nextKeyData := GetKeyDataFromEntry(FEntryNo+1);
     // check if prior entry not greater, 'rightmost' key does not have to match
     if (FEntryNo > 0) and ((FLowerPage = nil) or (FEntryNo < FHighIndex)) then
     begin
+      prevKeyData := GetKeyDataFromEntry(FEntryNo-1);
       if FIndexFile.CompareKeys(prevKeyData, curKeyData) > 0 then
         assert(false);
     end;
@@ -1012,6 +1011,7 @@ begin
     if ((FLowerPage = nil) and (FEntryNo < FHighIndex)) or
         ((FLowerPage <> nil) and (FEntryNo < (FHighIndex - 1))) then
     begin
+      nextKeyData := GetKeyDataFromEntry(FEntryNo+1);
       if FIndexFile.CompareKeys(curKeyData, nextKeyData) > 0 then
         assert(false);
     end;
