@@ -168,13 +168,12 @@ implementation
 uses
 {$ifdef WINDOWS}
   Windows,
-{$else}
-  RTLConsts,
 {$ifdef KYLIX}
   Libc, 
 {$endif}  
   Types, dbf_wtil,
 {$endif}
+  RTLConsts,
   dbf_str;
 
 //====================================================================
@@ -184,22 +183,14 @@ function TPagedFileStream.Read(var Buffer; Count: Longint): Longint;
 begin
   Result := FileRead(Handle,Buffer,Count);
   if Result = -1 then
-{$ifdef WINDOWS}
-    RaiseLastOSError;
-{$else}
-    raise EStreamError.Create(SReadError);
-{$endif}
+    raise EPagedFile.Create(SReadError);
 end;
 
 function TPagedFileStream.Write(const Buffer; Count: Longint): Longint;
 begin
   Result:=FileWrite (Handle,Buffer,Count);
   if Result = -1 then
-  {$ifdef WINDOWS}
-    RaiseLastOSError;
-  {$else}
-    raise EStreamError.Create(SWriteError);
-  {$endif}
+    raise EPagedFile.Create(SWriteError);
 end;
 
 {$ifdef SUPPORT_INT64}
@@ -207,11 +198,7 @@ function TPagedFileStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
 begin
   Result := FileSeek(Handle, Offset, Ord(Origin));
   if Result = -1 then
-  {$ifdef WINDOWS}
-    RaiseLastOSError;
-  {$else}
-    raise EStreamError.Create(SReadError);
-  {$endif}
+    raise EPagedFile.Create(SReadError);
 end;
 {$else}
 function TPagedFileStream.Seek(Offset: Longint; Origin: Word): Longint;
@@ -224,21 +211,13 @@ end;
 procedure TPagedFileStream.SetSize(NewSize: Longint);
 begin
   if not FileTruncate(Handle, NewSize) then
-  {$ifdef WINDOWS}
-    RaiseLastOSError;
-  {$else}
-    raise EStreamError.Create(SWriteError);
-  {$endif}
+    raise EPagedFile.Create(SWriteError);
 end;
 {$else}
 procedure SetSize(const NewSize: Int64);
 begin
   if not FileTruncate(Handle, NewSize) then
-  {$ifdef WINDOWS}
-    RaiseLastOSError;
-  {$else}
-    raise EStreamError.Create(SWriteError);
-  {$endif}
+    raise EPagedFile.Create(SWriteError);
 end;
 {$endif}
 
