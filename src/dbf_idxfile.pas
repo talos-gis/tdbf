@@ -297,7 +297,7 @@ type
     function  InsertKey(Buffer: TDbfRecordBuffer): Boolean;
     procedure DeleteKey(Buffer: TDbfRecordBuffer);
     function  InsertCurrent: Boolean;
-    procedure DeleteCurrent;
+    function  DeleteCurrent: Boolean;
     function  UpdateCurrent(PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     function  UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     procedure ReadIndexes;
@@ -3238,9 +3238,10 @@ begin
   end;
 end;
 
-procedure TIndexFile.DeleteCurrent;
+function TIndexFile.DeleteCurrent: Boolean;
   // deletes from current index
 begin
+  Result := True;
   // only delete if not delete record or mode = distinct
   // modify = mmDeleteRecall /\ unique = distinct -> key needs to be deleted from index
   if (FModifyMode <> mmDeleteRecall) or (FUniqueMode = iuDistinct) then
@@ -3250,10 +3251,15 @@ begin
     // search correct entry to delete
     if FLeaf.PhysicalRecNo <> FUserRecNo then
     begin
-      FindKey(false);
+      Result := FindKey(false) = 0;
+      if not Result then
+        Result := FLeaf.PhysicalRecNo = FUserRecNo;
     end;
     // delete selected entry
-    FLeaf.Delete;
+    if Result then
+      FLeaf.Delete
+    else
+      InvalidError;
   end;
 end;
 
@@ -3276,18 +3282,30 @@ begin
     Result := true;
     I := 0;
     count := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
-    while I < count do
+    while (I < count) and Result do
     begin
-      Result := UpdateIndex(I, PrevBuffer, NewBuffer);
-      if not Result then
-      begin
-        // rollback updates to previous indexes
-        while I > 0 do
-        begin
-          Dec(I);
-          UpdateIndex(I, NewBuffer, PrevBuffer);
+      try
+        try
+          Result := UpdateIndex(I, PrevBuffer, NewBuffer);
+        except
+          on EDbfIndexError do
+          begin
+            Result := False;
+            raise;
+          end;
+        else
+          raise;
         end;
-        break;
+      finally
+        if not Result then
+        begin
+          // rollback updates to previous indexes
+          while I > 0 do
+          begin
+            Dec(I);
+            UpdateIndex(I, NewBuffer, PrevBuffer);
+          end;
+        end;
       end;
       Inc(I);
     end;
@@ -3318,14 +3336,17 @@ begin
     if CompareKeys(DeleteKey, InsertKey) <> 0 then
     begin
       FUserKey := DeleteKey;
-      DeleteCurrent;
-      FUserKey := InsertKey;
-      Result := InsertCurrent;
-      if not Result then
+      Result := DeleteCurrent;
+      if Result then
       begin
-        FUserKey := DeleteKey;
-        InsertCurrent;
         FUserKey := InsertKey;
+        Result := InsertCurrent;
+        if not Result then
+        begin
+          FUserKey := DeleteKey;
+          InsertCurrent;
+          FUserKey := InsertKey;
+        end;
       end;
     end;
   end;
