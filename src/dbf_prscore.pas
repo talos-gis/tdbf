@@ -1115,7 +1115,7 @@ begin
       begin
         // do we need to reset pointer?
         if ResetDest then
-          Res.MemoryPos^ := Res.Memory^;
+          Res.Rewind;
 
         Oper(TempRec);
 
