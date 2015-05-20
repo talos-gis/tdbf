@@ -453,18 +453,43 @@ begin
 end;
 
 procedure TPagedFile.SynchronizeBuffer(IntRecNum: Integer);
+var
+  BufferPageMin: Integer;
 begin
   // record outside buffer, flush previous buffer
   FlushBuffer;
   // read new set of records
-  FBufferPage := IntRecNum;
-  FBufferOffset := CalcPageOffset(IntRecNum);
-  if FBufferOffset + FBufferMaxSize > FCachedSize then
-    FBufferReadSize := FCachedSize - FBufferOffset
+//FBufferPage := IntRecNum;
+//FBufferOffset := CalcPageOffset(IntRecNum);
+//if FBufferOffset + FBufferMaxSize > FCachedSize then
+//  FBufferReadSize := FCachedSize - FBufferOffset
+//else
+//  FBufferReadSize := FBufferMaxSize;
+  if (FBufferPage >= 0) and ((IntRecNum < Pred(FBufferPage)) or (IntRecNum > FBufferPage + (FBufferSize div PageSize))) then // 10/28/2011 pb  CR 19176
+    FBufferReadSize := RecordSize
   else
     FBufferReadSize := FBufferMaxSize;
+  if IntRecNum < FBufferPage then
+  begin
+    if FPageOffsetByHeader then
+      BufferPageMin := 1
+    else
+      BufferPageMin := 0;
+    FBufferPage := (IntRecNum + 1) - (FBufferReadSize div PageSize);
+    if FBufferPage < BufferPageMin then
+    begin
+      Dec(FBufferReadSize, (BufferPageMin - FBufferPage) * PageSize);
+      FBufferPage := BufferPageMin;
+    end;
+  end
+  else
+    FBufferPage := IntRecNum;
+  FBufferOffset := CalcPageOffset(FBufferPage);
+  if FBufferOffset + FBufferReadSize > FCachedSize then
+    FBufferReadSize := FCachedSize - FBufferOffset;
   FBufferSize := FBufferReadSize;
-  FBufferReadSize := ReadBlock(FBufferPtr, FBufferReadSize, FBufferOffset);
+  if FBufferReadSize <> 0 then
+    FBufferReadSize := ReadBlock(FBufferPtr, FBufferReadSize, FBufferOffset);
 end;
 
 function TPagedFile.IsRecordPresent(IntRecNum: Integer): boolean;
@@ -483,8 +508,9 @@ begin
   if FBufferAhead then
   begin
     Offset := TPagedFileSize(IntRecNum - FBufferPage) * PageSize;
-    if (FBufferPage <> -1) and (FBufferPage <= IntRecNum) and
-        (Offset+RecordSize <= FBufferReadSize) then
+  if (FBufferPage <> -1) and (FBufferPage <= IntRecNum) and
+//      (Offset+RecordSize <= FBufferReadSize) then
+        (Offset + RecordSize <= FBufferSize) then
     begin
       // have record in buffer, nothing to do here
     end else begin
@@ -497,7 +523,7 @@ begin
         exit;
       end;
       // reset offset into buffer
-      Offset := 0;
+      Offset := TFileOffset(IntRecNum - FBufferPage) * PageSize;
     end;
     // now we have this record in buffer
     Move(PAnsiChar(FBufferPtr)[Offset], Buffer^, RecordSize); // Was PChar
@@ -517,7 +543,8 @@ begin
   begin
     RecEnd := TPagedFileSize(IntRecNum - FBufferPage + PagesPerRecord) * PageSize;
     if (FBufferPage <> -1) and (FBufferPage <= IntRecNum) and
-        (RecEnd <= FBufferMaxSize) then
+//      (RecEnd <= FBufferMaxSize) then
+        (RecEnd <= FBufferMaxSize) and (RecEnd <= FBufferSize + RecordSize) then
     begin
       // extend buffer?
       if RecEnd > FBufferSize then
@@ -568,7 +595,10 @@ begin
   begin
     FBufferMaxSize := 65536;
     if RecordSize <> 0 then
-      Dec(FBufferMaxSize, FBufferMaxSize mod PageSize);
+//    Dec(FBufferMaxSize, FBufferMaxSize mod PageSize);
+      Dec(FBufferMaxSize, FBufferMaxSize mod RecordSize);
+    if FBufferMaxSize < RecordSize then
+      FBufferMaxSize := RecordSize;
   end else begin
     FBufferMaxSize := 0;
   end;

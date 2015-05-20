@@ -111,6 +111,7 @@ following changes thx paulenandrew:
 - if there is a file read/write error, raise an exception
 - Change index locking algorithm to avoid resyncs, achieves much better performance (consistent with BDE)
 - Use BufferAhead and DisableResyncOnPost by default when table is exclusive or write locked, achieves much better performance
+- Use dynamic buffer size, achieves much better performance with both random and sequential access (performance comparable to BDE)
 
 ------------------------
 V6.9.1
