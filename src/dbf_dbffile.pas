@@ -33,6 +33,7 @@ uses
 type
 
 //====================================================================
+  TDbfIndexInvalidEvent = procedure(Sender: TObject; var Handled, DeleteLink: Boolean) of object;
   TDbfIndexMissingEvent = procedure(var DeleteLink: Boolean) of object;
   TUpdateNullField = (unClear, unSet);
 
@@ -65,6 +66,7 @@ type
     FDateTimeHandling: TDateTimeHandling;
     FInCopyFrom: Boolean;
     FOnLocaleError: TDbfLocaleErrorEvent;
+    FOnIndexInvalid: TDbfIndexInvalidEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
 
     function  HasBlob: Boolean;
@@ -138,6 +140,7 @@ type
     property DateTimeHandling: TDateTimeHandling read FDateTimeHandling write FDateTimeHandling;
     property InCopyFrom: Boolean write FInCopyFrom;
 
+    property OnIndexInvalid: TDbfIndexInvalidEvent read FOnIndexInvalid write FOnIndexInvalid;
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
   end;
@@ -391,6 +394,7 @@ var
   lModified: boolean;
   LangStr: PAnsiChar;
   version: byte;
+  Handled: Boolean;
 begin
   // check if not already opened
   if not Active then
@@ -549,7 +553,32 @@ begin
           FMdxFile.AutoCreate := false;
           FMdxFile.OnLocaleError := FOnLocaleError;
           FMdxFile.CodePage := UseCodePage;
-          FMdxFile.Open;
+          try
+            FMdxFile.Open;
+          except
+            on E: Exception do
+            begin
+              if (E is EDbfIndexError) or (E is EParserException) then
+              begin
+                FMdxFile.Close;
+                Handled := False;
+                deleteLink := False;
+                if Assigned(FOnIndexInvalid) then
+                  FOnIndexInvalid(Self, Handled, deleteLink);
+                if not Handled then
+                  raise;
+                if deleteLink then
+                begin
+                  PDbfHdr(Header)^.MDXFlag := 0;
+                  lModified := true;
+                end;
+              end
+              else
+                raise;
+            end;
+          else
+            raise;
+          end;
           // is index ready for use?
           if not FMdxFile.ForceClose then
           begin

@@ -191,6 +191,7 @@ type
     FOnTranslate: TTranslateEvent;
     FOnLanguageWarning: TLanguageWarningEvent;
     FOnLocaleError: TDbfLocaleErrorEvent;
+    FOnIndexInvalid: TDbfIndexInvalidEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
     FOnCompareRecord: TNotifyEvent;
     FOnCopyDateTimeAsString: TConvertFieldEvent;
@@ -455,6 +456,7 @@ type
     property OnCompareRecord: TNotifyEvent read FOnCompareRecord write FOnCompareRecord;
     property OnLanguageWarning: TLanguageWarningEvent read FOnLanguageWarning write FOnLanguageWarning;
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
+    property OnIndexInvalid: TDbfIndexInvalidEvent read FOnIndexInvalid write FOnIndexInvalid;
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnCopyDateTimeAsString: TConvertFieldEvent read FOnCopyDateTimeAsString write FOnCopyDateTimeAsString;
     property OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -1182,6 +1184,7 @@ begin
   FDbfFile.AutoCreate := false;
   FDbfFile.DateTimeHandling := FDateTimeHandling;
   FDbfFile.OnLocaleError := FOnLocaleError;
+  FDbfFile.OnIndexInvalid := FOnIndexInvalid;
   FDbfFile.OnIndexMissing := FOnIndexMissing;
 end;
 
