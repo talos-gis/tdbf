@@ -102,6 +102,7 @@ following changes thx paulenandrew:
 - fix problems if index key length does not match parser result length
 - fix error handling updating an index
 - fix potential access violation if TDBF_INDEX_CHECK is defined
+- fix problems maintaining an index if leaf nodes are not on the same level (though they should be), raise "Invalid MDX file." exception
 
 ------------------------
 V6.9.1

@@ -1311,13 +1311,9 @@ begin
         end;
         // read first entry, don't do this sooner, not created lowerpage yet
         // don't recursively resync all lower pages
-{$ifdef TDBF_INDEX_CHECK}
       end else if FLowerPage <> nil then
       begin
-//        FLowerPage.Free;
-//        FLowerPage := nil;
-        assert(false);
-{$endif}
+        FIndexFile.InvalidError;
       end else begin
         // we don't have to check autoresync here because we're already at lowest level
         EntryNo := FLowIndex;
