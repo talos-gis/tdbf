@@ -100,7 +100,7 @@ type
     FName: string;
     FExprFunc: TExprFunc;
   protected
-    FRefCount: Cardinal;
+    FRefCount: Integer;
 
     function GetIsOperator: Boolean; virtual;
     function GetIsVariable: Boolean;
@@ -867,7 +867,7 @@ begin
   inherited;
 
   { remember we reference the object }
-  Inc(TExprWord(Item).FRefCount);
+  InterlockedIncrement(TExprWord(Item).FRefCount);
 
   { also add ShortName as reference }
   if Length(TExprWord(Item).ShortName) > 0 then
@@ -889,10 +889,12 @@ end;
 
 procedure TExpressList.FreeItem(Item: Pointer);
 begin
-  Dec(TExprWord(Item).FRefCount);
-  FShortList.Remove(Item);
-  if TExprWord(Item).FRefCount = 0 then
-    inherited;
+  if InterlockedDecrement(TExprWord(Item).FRefCount) = 0 then
+  begin
+    FShortList.Remove(Item);
+    if TExprWord(Item).FRefCount = 0 then
+      inherited;
+  end;
 end;
 
 function TExpressList.Search(Key: Pointer; var Index: Integer): Boolean;

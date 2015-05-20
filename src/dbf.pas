@@ -666,9 +666,6 @@ constructor TDbf.Create(AOwner: TComponent); {override;}
 begin
   inherited;
 
-  if DbfGlobals = nil then
-    DbfGlobals := TDbfGlobals.Create;
-
   BookmarkSize := sizeof(TBookmarkData);
   FIndexDefs := TDbfIndexDefs.Create(Self);
   FMasterLink := TDbfMasterLink.Create(Self);

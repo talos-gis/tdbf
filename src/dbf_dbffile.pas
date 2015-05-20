@@ -2938,6 +2938,7 @@ initialization
   FORMAT_SETTINGS_DECIMAL_POINT.DecimalSeparator := '.';
   FORMAT_SETTINGS_DECIMAL_POINT.ThousandSeparator := #0;
 {$endif SUPPORT_FORMATSETTINGSTYPE}
+  DbfGlobals := TDbfGlobals.Create;
 finalization
   FreeAndNil(DbfGlobals);
 
