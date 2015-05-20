@@ -2362,7 +2362,7 @@ begin
   end;
 
 //PIndexHdr(FIndexHeader)^.Version := SwapWordLE(2);     // this is what DB4 writes into file
-  PIndexHdr(FIndexHeader)^.Version := 4; // this is what the BDE uses for the first version
+  PIndexHdr(FIndexHeader)^.Version := SwapWordLE(4); // this is what the BDE uses for the first version
   PIndexHdr(FIndexHeader)^.Dummy2 := 0;
   PIndexHdr(FIndexHeader)^.Dummy3 := 0;
   PIndexHdr(FIndexHeader)^.ForExist := 0;    // false
