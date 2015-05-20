@@ -108,6 +108,7 @@ following changes thx paulenandrew:
 - fix sporadic access violation and other errors when creating/destroying a table in a multi-threaded application (fixes bug #68)
 - fix writing of EOF terminator when inserting a record (fixes bug #58)
 - fix incorrect parser linked list
+- if there is a file read/write error, raise an exception
 
 ------------------------
 V6.9.1

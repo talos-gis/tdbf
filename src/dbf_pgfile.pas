@@ -35,6 +35,23 @@ type
 
   TPagedFileSize = {$ifdef SUPPORT_INT64}Int64{$else}Integer{$endif};
 
+  TPagedFileStream = class(TFileStream)
+  protected
+{$ifdef SUPPORT_INT64}
+    procedure SetSize(NewSize: Longint); override;
+{$else}
+    procedure SetSize(const NewSize: Int64); override;
+{$endif}
+  public
+    function Read(var Buffer; Count: Longint): Longint; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
+{$ifdef SUPPORT_INT64}
+    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+{$else}
+    function Seek(Offset: Longint; Origin: Word): Longint; override;
+{$endif}
+  end;
+
   TPagedFile = class(TObject)
   protected
     FStream: TStream;
@@ -162,6 +179,71 @@ uses
 //====================================================================
 // TPagedFile
 //====================================================================
+function TPagedFileStream.Read(var Buffer; Count: Longint): Longint;
+begin
+  Result := FileRead(Handle,Buffer,Count);
+  if Result = -1 then
+{$ifdef WINDOWS}
+    RaiseLastOSError;
+{$else}
+    raise EStreamError.Create(SReadError);
+{$endif}
+end;
+
+function TPagedFileStream.Write(const Buffer; Count: Longint): Longint;
+begin
+  Result:=FileWrite (Handle,Buffer,Count);
+  if Result = -1 then
+  {$ifdef WINDOWS}
+    RaiseLastOSError;
+  {$else}
+    raise EStreamError.Create(SWriteError);
+  {$endif}
+end;
+
+{$ifdef SUPPORT_INT64}
+function TPagedFileStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+begin
+  Result := FileSeek(Handle, Offset, Ord(Origin));
+  if Result = -1 then
+  {$ifdef WINDOWS}
+    RaiseLastOSError;
+  {$else}
+    raise EStreamError.Create(SReadError);
+  {$endif}
+end;
+{$else}
+function TPagedFileStream.Seek(Offset: Longint; Origin: Word): Longint;
+begin
+  Result := FileSeek(Handle, Offset, Ord(Origin));
+end;
+{$endif}
+
+{$ifdef SUPPORT_INT64}
+procedure TPagedFileStream.SetSize(NewSize: Longint);
+begin
+  if not FileTruncate(Handle, NewSize) then
+  {$ifdef WINDOWS}
+    RaiseLastOSError;
+  {$else}
+    raise EStreamError.Create(SWriteError);
+  {$endif}
+end;
+{$else}
+procedure SetSize(const NewSize: Int64);
+begin
+  if not FileTruncate(Handle, NewSize) then
+  {$ifdef WINDOWS}
+    RaiseLastOSError;
+  {$else}
+    raise EStreamError.Create(SWriteError);
+  {$endif}
+end;
+{$endif}
+
+//====================================================================
+// TPagedFile
+//====================================================================
 constructor TPagedFile.Create;
 begin
   FFileName := EmptyStr;
@@ -242,7 +324,7 @@ begin
                          fileOpenMode := fmOpenRead or fmShareDenyNone;
     end;
     // open file
-    FStream := TFileStream.Create(FFileName, fileOpenMode);
+    FStream := TPagedFileStream.Create(FFileName, fileOpenMode);
     // if creating, then empty file
     if FileCreated then
       FStream.Size := 0;
