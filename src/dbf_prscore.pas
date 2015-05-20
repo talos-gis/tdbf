@@ -401,14 +401,17 @@ var
         exit;
       end;
 
-      while (I < ExprWord.MaxFunctionArg) and (ArgList[I] <> nil) and (error = 0) do
+      while (ArgList[I] <> nil) and (error = 0) do
       begin
-        // test subarguments first
-        CheckArguments(ArgList[I]);
+        if I < ExprWord.MaxFunctionArg then
+        begin
+          // test subarguments first
+          CheckArguments(ArgList[I]);
 
-        // test if correct type
-        if (ArgList[I]^.ExprWord.ResultType <> ExprCharToExprType(ExprWord.TypeSpec[I+1])) then
-          error := 2;
+          // test if correct type
+          if (ArgList[I]^.ExprWord.ResultType <> ExprCharToExprType(ExprWord.TypeSpec[I+1])) then
+            error := 2;
+        end;
 
         // goto next argument
         Inc(I);
