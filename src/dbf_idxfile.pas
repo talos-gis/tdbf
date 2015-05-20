@@ -38,6 +38,8 @@ const
   MaxIndexKeyLen = 100;
 
 type
+  EDbfIndexError = class(EDbfError);
+
   TIndexPage = class;
   TIndexTag = class;
 
@@ -333,6 +335,7 @@ type
     procedure SetUpdateMode(NewMode: TIndexUpdateMode);
     procedure SetIndexName(const AIndexName: string);
 
+    procedure InvalidError;
   public
     constructor Create(ADbfFile: Pointer);
     destructor Destroy; override;
@@ -1882,10 +1885,10 @@ begin
       end;
       RecordSize := PMdxHdr(Header)^.BlockAdder;
       if (PMdxHdr(Header)^.BlockSize = 0) or (PMdxHdr(Header)^.BlockAdder = 0) then
-        raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+        InvalidError;
       PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
       if SwapWordLE(PMdxHdr(Header)^.TagsUsed) > MaxIndexes then
-        raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+        InvalidError;
       case FIndexVersion of
         xBaseVII:
           begin
@@ -2384,9 +2387,9 @@ var
   procedure CheckHeaderIntegrity;
   begin
     if (SwapWordLE(PIndexHdr(FIndexHeader)^.KeyLen) > MaxIndexKeyLen) or (PIndexHdr(FIndexHeader)^.KeyLen = 0) then
-      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+      InvalidError;
     if Integer(SwapWordLE(PIndexHdr(FIndexHeader)^.NumKeys) * SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen)) > RecordSize then
-      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+      InvalidError;
   end;
 
 begin
@@ -2399,9 +2402,9 @@ begin
     FTagSize := PMdxHdr(Header)^.TagSize;
     FTagOffset := 544 + FTagSize - 32;
     if FTagOffset + (SwapWordLE(PMdxHdr(Header)^.TagsUsed) * FTagSize) > size then
-      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+      InvalidError;
     if FTagOffset + (MaxIndexes * FTagSize) > HeaderSize then
-      raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+      InvalidError;
     // clear all roots
     ClearRoots;
     for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
@@ -4053,6 +4056,12 @@ begin
       FRangeIndex := -1;
     end;
   end;
+end;
+
+procedure TIndexFile.InvalidError;
+begin
+  FForceClose := True;
+  raise EDbfIndexError.Create(STRING_INVALID_MDX_FILE);
 end;
 
 function TIndexFile.CalcTagOffset(AIndex: Integer): Pointer;

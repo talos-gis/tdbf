@@ -97,6 +97,7 @@ following changes thx paulenandrew:
 - fix error handling if invalid record number in index
 - recalculate key length when rebuilding an index, to correct it if necessary
 - implement DeleteMdxFile to delete MDX index file and clear MDX flag, implement DeleteIndexFile to delete index file
+- consistently use EDbfIndexError for index error
 
 ------------------------
 V6.9.1
