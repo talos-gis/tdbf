@@ -169,6 +169,7 @@ uses
 {$ifdef WINDOWS}
   Windows,
 {$else}
+  RTLConsts,
 {$ifdef KYLIX}
   Libc, 
 {$endif}  
