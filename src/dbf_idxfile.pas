@@ -1444,7 +1444,9 @@ begin
 //  if LowerPage = nil then
 //    Result := 0
 //  else
-    Result := SwapIntLE(PMdxEntry(Entry)^.RecBlockNo);
+  Result := Integer(SwapIntLE(DWORD(PMdxEntry(Entry)^.RecBlockNo)));
+  if Result = 0 then
+    FIndexFile.InvalidError;
 end;
 
 function TMdxPage.GetKeyData: PAnsiChar;
@@ -1454,7 +1456,12 @@ end;
 
 function TMdxPage.GetNumEntries: Integer;
 begin
-  Result := SwapWordLE(PMdxPage(PageBuffer)^.NumEntries);
+  Result:= Integer(SwapIntLE(DWORD(PMdxPage(PageBuffer)^.NumEntries)));
+  if (Result < 0) or (Result > SwapWordLE(PIndexHdr(FIndexFile.FIndexHeader)^.NumKeys)) then
+  begin
+    Result:= 0;
+    FIndexFile.InvalidError;
+  end;
 end;
 
 function TMdxPage.GetKeyDataFromEntry(AEntry: Integer): PAnsiChar;
@@ -1464,7 +1471,7 @@ end;
 
 function TMdxPage.GetRecNo: Integer;
 begin
-  Result := SwapIntLE(PMdxEntry(Entry)^.RecBlockNo);
+  Result := Integer(SwapIntLE(DWORD(PMdxEntry(Entry)^.RecBlockNo)));
 end;
 
 procedure TMdxPage.SetNumEntries(NewNum: Integer);

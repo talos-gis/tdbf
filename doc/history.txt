@@ -103,6 +103,7 @@ following changes thx paulenandrew:
 - fix error handling updating an index
 - fix potential access violation if TDBF_INDEX_CHECK is defined
 - fix problems maintaining an index if leaf nodes are not on the same level (though they should be), raise "Invalid MDX file." exception
+- fix error handling of out of range value in index page
 
 ------------------------
 V6.9.1
