@@ -109,6 +109,7 @@ following changes thx paulenandrew:
 - fix writing of EOF terminator when inserting a record (fixes bug #58)
 - fix incorrect parser linked list
 - if there is a file read/write error, raise an exception
+- Change index locking algorithm to avoid resyncs, achieves much better performance (consistent with BDE)
 
 ------------------------
 V6.9.1

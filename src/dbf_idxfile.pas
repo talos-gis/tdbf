@@ -103,7 +103,7 @@ type
     FPageBuffer: Pointer;
     FEntry: Pointer;
     FEntryNo: Integer;
-    FLockCount: Integer;
+//  FLockCount: Integer;
     FModified: Boolean;
     FPageNo: Integer;
     FWeight: TSequentialRecNo;
@@ -118,15 +118,15 @@ type
     FHighPage: Integer;
     FHighPageTemp: Integer;
 
-    procedure LocalInsert(RecNo: Integer; Buffer: PAnsiChar; LowerPageNo: Integer);
+    procedure LocalInsert(RecNo: Integer; Buffer: PChar; LowerPageNo: Integer);
     procedure LocalDelete;
     procedure Delete;
 
     procedure SyncLowerPage;
     procedure WritePage;
     procedure Split;
-    procedure LockPage;
-    procedure UnlockPage;
+//  procedure LockPage;
+//  procedure UnlockPage;
 
     function RecurPrev: Boolean;
     function RecurNext: Boolean;
@@ -257,7 +257,7 @@ type
     FIsDescending: Boolean;
     FUniqueMode: TIndexUniqueType;
     FModifyMode: TIndexModifyMode;
-    FHeaderLocked: Integer;   // used to remember which header page we have locked
+//  FHeaderLocked: Integer;   // used to remember which header page we have locked
     FKeyBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
     FLowBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
     FHighBuffer: array[0..MaxIndexKeyLen] of AnsiChar;
@@ -335,6 +335,11 @@ type
     procedure SetUpdateMode(NewMode: TIndexUpdateMode);
     procedure SetIndexName(const AIndexName: string);
 
+    procedure LockIndex;
+    procedure UnlockIndex;
+    function VersionPosition: TFileOffset;
+    function ReadVersion(PVersion: PByte): Boolean;
+    procedure WriteVersion(PVersion: PByte);
     procedure InvalidError;
   public
     constructor Create(ADbfFile: Pointer);
@@ -347,7 +352,7 @@ type
     procedure Flush; override;
     procedure ClearIndex;
     procedure AddNewLevel;
-    procedure UnlockHeader;
+//  procedure UnlockHeader;
     procedure InsertError;
     function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
     function  Update(RecNo: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
@@ -422,6 +427,9 @@ function IndexNameNormalize(Value: string): string;
 implementation
 
 uses
+{$ifndef WINDOWS}
+  RTLConsts,
+{$endif}
   dbf_AnsiStrings,
   dbf_dbffile,
   dbf_fields,
@@ -705,7 +713,7 @@ end;
 destructor TIndexPage.Destroy;
 begin
   // no locks anymore?
-  assert(FLockCount = 0);
+//assert(FLockCount = 0);
   if (FLowerPage<>nil) then
     LowerPage.Free;
   WritePage;
@@ -727,7 +735,7 @@ begin
   FHighPage := 0;
   FLowIndex := 0;
   FHighIndex := -1;
-  FLockCount := 0;
+//FLockCount := 0;
 end;
 
 procedure TIndexPage.GetNewPage;
@@ -740,6 +748,7 @@ begin
   FModified := true;
 end;
 
+(*
 procedure TIndexPage.LockPage;
 begin
   // already locked?
@@ -762,6 +771,7 @@ begin
     FIndexFile.UnlockPage(FPageNo);
   end;
 end;
+*)
 
 procedure TIndexPage.LocalInsert(RecNo: Integer; Buffer: PAnsiChar; LowerPageNo: Integer);
   // *) assumes there is at least one entry free
@@ -770,8 +780,8 @@ var
   size, lNumEntries, numKeysAvail: Integer;
 begin
   // lock page if needed; wait if not available, anyone else updating?
-  LockPage;
-  try
+//LockPage;
+//try
     // check assertions
     lNumEntries := GetNumEntries;
     // if this is inner node, we can only store one less than max entries
@@ -794,9 +804,9 @@ begin
     // lNumEntries not valid from here
     SetEntry(RecNo, Buffer, LowerPageNo);
     // done!
-  finally
-    UnlockPage;
-  end;
+//finally
+//  UnlockPage;
+//end;
 end;
 
 procedure TIndexPage.LocalDelete;
@@ -1042,12 +1052,12 @@ begin
   // assure parent exists, if not -> create & lock, else lock it
   newRoot := FUpperPage = nil;
   if newRoot then
-    FIndexFile.AddNewLevel
-  else
-    FUpperPage.LockPage;
+    FIndexFile.AddNewLevel;
+//else
+//  FUpperPage.LockPage;
 
   // lock this page for updates
-  LockPage;
+//LockPage;
 
   // get num entries
   lNumEntries := GetNumEntries;
@@ -1141,12 +1151,12 @@ begin
   end;
 
   // done updating: unlock page
-  UnlockPage;
+//UnlockPage;
   // save changes to parent
-  FUpperPage.UnlockPage;
+//FUpperPage.UnlockPage;
 
   // unlock new root, unlock header too
-  FIndexFile.UnlockHeader;
+//FIndexFile.UnlockHeader;
 
   // go to entry we left on
   if oldEntryNo >= splitRight then
@@ -1284,7 +1294,7 @@ begin
     // save changes
     WritePage;
     // no locks
-    assert(FLockCount = 0);
+//  assert(FLockCount = 0);
 
     // goto new page
     FPageNo := NewPageNo;
@@ -1838,13 +1848,13 @@ begin
     // page offsets are not related to header length
     PageOffsetByHeader := false;
     // we need physical page locks
-    VirtualLocks := false;
+//  VirtualLocks := false;
 
     // not selected index expression => can't edit yet
     FCanEdit := false;
     FUserKey := nil;
     FUserRecNo := -1;
-    FHeaderLocked := -1;
+//  FHeaderLocked := -1;
     FHeaderPageNo := 0;
     FForceClose := false;
     FForceReadOnly := false;
@@ -2136,20 +2146,21 @@ begin
 end;
 
 procedure TIndexFile.ClearIndex;
-var
-  prevHeaderLocked: Integer;
-  needHeaderLock: Boolean;
+//var
+//prevHeaderLocked: Integer;
+//needHeaderLock: Boolean;
 begin
   // flush cache to prevent reading corrupted data
+  WriteVersion(@PIndexHdr(FIndexHeader)^.Version);
   Flush;
   // modifying header: lock page
-  needHeaderLock := FHeaderLocked <> 0;
-  prevHeaderLocked := FHeaderLocked;
-  if needHeaderLock then
-  begin
-    LockPage(0, true);
-    FHeaderLocked := 0;
-  end;
+//needHeaderLock := FHeaderLocked <> 0;
+//prevHeaderLocked := FHeaderLocked;
+//if needHeaderLock then
+//begin
+//  LockPage(0, true);
+//  FHeaderLocked := 0;
+//end;
   // initially, we have 1 page: header
   PIndexHdr(FIndexHeader)^.NumPages := SwapIntLE(HeaderSize div PageSize);
   // clear memory of root
@@ -2169,11 +2180,11 @@ begin
   FRoot.Modified;
   FRoot.WritePage;
   // done updating: unlock header
-  if needHeaderLock then
-  begin
-    UnlockPage(0);
-    FHeaderLocked := prevHeaderLocked;
-  end;
+//if needHeaderLock then
+//begin
+//  UnlockPage(0);
+//  FHeaderLocked := prevHeaderLocked;
+//end;
 end;
 
 procedure TIndexFile.CalcKeyLen;
@@ -2350,7 +2361,8 @@ begin
     PIndexHdr(FIndexHeader)^.sKeyType := 0;
   end;
 
-  PIndexHdr(FIndexHeader)^.Version := SwapWordLE(2);     // this is what DB4 writes into file
+//PIndexHdr(FIndexHeader)^.Version := SwapWordLE(2);     // this is what DB4 writes into file
+  PIndexHdr(FIndexHeader)^.Version := 4; // this is what the BDE uses for the first version
   PIndexHdr(FIndexHeader)^.Dummy2 := 0;
   PIndexHdr(FIndexHeader)^.Dummy3 := 0;
   PIndexHdr(FIndexHeader)^.ForExist := 0;    // false
@@ -2360,6 +2372,7 @@ begin
   PIndexHdr(FIndexHeader)^.FirstNode := 0;
   PIndexHdr(FIndexHeader)^.LastNode := 0;
 {$endif}
+  WriteVersion(@PIndexHdr(FIndexHeader)^.Version);
   WriteHeader;
 
   // update internal properties
@@ -2857,19 +2870,19 @@ begin
 end;
 
 function TIndexFile.GetNewPageNo: Integer;
-var
-  needLockHeader: Boolean;
+//var
+//needLockHeader: Boolean;
 begin
   // update header -> lock it if not already locked
-  needLockHeader := FHeaderLocked <> 0;
-  if needLockHeader then
-  begin
+//needLockHeader := FHeaderLocked <> 0;
+//if needLockHeader then
+//begin
     // lock header page
-    LockPage(0, true);
+//  LockPage(0, true);
     // someone else could be inserting records at the same moment
-    if NeedLocks then
-      inherited ReadHeader;
-  end;
+//  if NeedLocks then
+//    inherited ReadHeader;
+//end;
   if FIndexVersion >= xBaseIV then
   begin
     Result := SwapIntLE(PMdxHdr(Header)^.NumPages);
@@ -2885,47 +2898,52 @@ begin
   IncIntLE(PIndexHdr(FIndexHeader)^.NumPages, PagesPerRecord);
   WriteHeader;
   // done updating header -> unlock if locked
-  if needLockHeader then
-    UnlockPage(0);
+//if needLockHeader then
+//  UnlockPage(0);
 end;
 
 function TIndexFile.Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean; {override;}
 var
   I, curSel, count: Integer;
 begin
-  // check if updating all or only current
-  FUserRecNo := RecNo;
-  if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
-  begin
-    // remember currently selected index
-    curSel := FSelectedIndex;
-    Result := true;
-    I := 0;
-    count := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
-    while I < count do
+  LockIndex;
+  try
+    // check if updating all or only current
+    FUserRecNo := RecNo;
+    if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
     begin
-      SelectIndexVars(I);
-      Result := InsertKey(Buffer, AUniqueMode);
-      if not Result then
+      // remember currently selected index
+      curSel := FSelectedIndex;
+      Result := true;
+      I := 0;
+      count := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
+      while I < count do
       begin
-        while I > 0 do
+        SelectIndexVars(I);
+        Result := InsertKey(Buffer, AUniqueMode);
+        if not Result then
         begin
-          Dec(I);
-          SelectIndexVars(I);
-          DeleteKey(Buffer);
+          while I > 0 do
+          begin
+            Dec(I);
+            SelectIndexVars(I);
+            DeleteKey(Buffer);
+          end;
+          break;
         end;
-        break;
+        Inc(I);
       end;
-      Inc(I);
+      // restore previous selected index
+      SelectIndexVars(curSel);
+    end else begin
+      Result := InsertKey(Buffer, AUniqueMode);
     end;
-    // restore previous selected index
-    SelectIndexVars(curSel);
-  end else begin
-    Result := InsertKey(Buffer, AUniqueMode);
-  end;
 
-  // check range, disabled by insert
-  ResyncRange(true);
+    // check range, disabled by insert
+    ResyncRange(true);
+  finally
+    UnlockIndex;
+  end;
 end;
 
 function TIndexFile.CheckKeyViolation(Buffer: TDbfRecordBuffer): Boolean;
@@ -3210,24 +3228,29 @@ procedure TIndexFile.Delete(RecNo: Integer; Buffer: TdbfRecordBuffer);
 var
   I, curSel: Integer;
 begin
-  // check if updating all or only current
-  FUserRecNo := RecNo;
-  if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
-  begin
-    // remember currently selected index
-    curSel := FSelectedIndex;
-    for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
+  LockIndex;
+  try
+    // check if updating all or only current
+    FUserRecNo := RecNo;
+    if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
     begin
-      SelectIndexVars(I);
+      // remember currently selected index
+      curSel := FSelectedIndex;
+      for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
+      begin
+        SelectIndexVars(I);
+        DeleteKey(Buffer);
+      end;
+      // restore previous selected index
+      SelectIndexVars(curSel);
+    end else begin
       DeleteKey(Buffer);
     end;
-    // restore previous selected index
-    SelectIndexVars(curSel);
-  end else begin
-    DeleteKey(Buffer);
+    // range may be changed
+    ResyncRange(true);
+  finally
+    UnlockIndex;
   end;
-  // range may be changed
-  ResyncRange(true);
 end;
 
 procedure TIndexFile.DeleteKey(Buffer: TdbfRecordBuffer);
@@ -3338,18 +3361,23 @@ begin
     // compare to see if anything changed
     if CompareKeys(DeleteKey, InsertKey) <> 0 then
     begin
-      FUserKey := DeleteKey;
-      Result := DeleteCurrent;
-      if Result then
-      begin
-        FUserKey := InsertKey;
-        Result := InsertCurrent(FUniqueMode);
-        if not Result then
+      LockIndex;
+      try
+        FUserKey := DeleteKey;
+        Result := DeleteCurrent;
+        if Result then
         begin
-          FUserKey := DeleteKey;
-          InsertCurrent(iuNormal);
           FUserKey := InsertKey;
+          Result := InsertCurrent(FUniqueMode);
+          if not Result then
+          begin
+            FUserKey := DeleteKey;
+            InsertCurrent(iuNormal);
+            FUserKey := InsertKey;
+          end;
         end;
+      finally
+        UnlockIndex;
       end;
     end;
   end;
@@ -3368,10 +3396,10 @@ begin
   lNewPage.GetNewPage;
 
   // lock this new page; will be unlocked by caller
-  lNewPage.LockPage;
+//lNewPage.LockPage;
   // lock index header; will be unlocked by caller
-  LockPage(FHeaderPageNo, true);
-  FHeaderLocked := FHeaderPageNo;
+//LockPage(FHeaderPageNo, true);
+//FHeaderLocked := FHeaderPageNo;
 
   // modify header
   PIndexHdr(FIndexHeader)^.RootPage := SwapIntLE(lNewPage.PageNo);
@@ -3397,6 +3425,7 @@ begin
   WriteRecord(FHeaderPageNo, FIndexHeader);
 end;
 
+(*
 procedure TIndexFile.UnlockHeader;
 begin
   if FHeaderLocked <> -1 then
@@ -3405,6 +3434,7 @@ begin
     FHeaderLocked := -1;
   end;
 end;
+*)
 
 procedure TIndexFile.ResyncRoot;
 begin
@@ -3471,8 +3501,8 @@ var
   numEntries, numKeysAvail, done, searchRecNo: Integer;
 begin
   // reread index header (to discover whether root page changed)
-  if NeedLocks then
-    ResyncRoot;
+//if NeedLocks then
+//  ResyncRoot;
   // if distinct or unique index -> every entry only occurs once ->
   // does not matter which recno we search -> search recno = -2 ->
   // extra info = recno
@@ -3694,16 +3724,24 @@ begin
 end;
 
 procedure TIndexFile.Resync(Relative: boolean);
+var
+  PVersion: PByte;
+  Version: Byte;
 begin
-  if NeedLocks then
+  if NeedLocks and (FIndexVersion >= xBaseIV) then
   begin
-    if not Relative then
+    PVersion := @PIndexHdr(FIndexHeader)^.Version;
+    Version := PVersion^;
+    if ReadVersion(PVersion) and (PVersion^ <> Version) then
     begin
-      ResyncRoot;
-      ResyncRange(false);
-    end else begin
-      // resyncing tree implies resyncing range
-      ResyncTree;
+      if not Relative then
+      begin
+        ResyncRoot;
+        ResyncRange(false);
+      end else begin
+        // resyncing tree implies resyncing range
+        ResyncTree;
+      end;
     end;
   end;
 end;
@@ -4083,6 +4121,56 @@ begin
       FRangeIndex := -1;
     end;
   end;
+  ReadVersion(@PIndexHdr(FIndexHeader)^.Version);
+end;
+
+procedure TIndexFile.LockIndex;
+begin
+  if NeedLocks and (FIndexVersion >= xBaseIV) then
+  begin
+    if not LockPage(0, True) then
+{$ifdef WINDOWS}
+      RaiseLastOSError;
+{$else}
+      raise EStreamError.Create(SWriteError);
+{$endif}
+    Resync(False);
+  end;
+end;
+
+procedure TIndexFile.UnlockIndex;
+var
+  PVersion: PByte;
+begin
+  if NeedLocks and (FIndexVersion >= xBaseIV) then
+  begin
+    try
+      FRoot.Flush;
+      PVersion := @PIndexHdr(FIndexHeader).Version;
+      if PVersion^ = High(PVersion^) then
+        PVersion^ := 0
+      else
+        Inc(PVersion^);
+      WriteVersion(PVersion);
+    finally
+      UnlockPage(0);
+    end;
+  end;
+end;
+
+function TIndexFile.VersionPosition: TFileOffset;
+begin
+  Result := TFileOffset(FMdxTag.HeaderPageNo) * PageSize + Integer(@PIndexHdr(nil)^.Version);
+end;
+
+function TIndexFile.ReadVersion(PVersion: PByte): Boolean;
+begin
+  Result := ReadBlock(PVersion, SizeOf(PVersion^), VersionPosition) = SizeOf(PVersion^);
+end;
+
+procedure TIndexFile.WriteVersion(PVersion: PByte);
+begin
+  WriteBlock(PVersion, SizeOf(PVersion^), VersionPosition);
 end;
 
 procedure TIndexFile.InvalidError;

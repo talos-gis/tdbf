@@ -97,8 +97,10 @@ type
 
 {$ifdef SUPPORT_INT64}
   TSequentialRecNo = Int64;
+  TFileOffset = Int64;
 {$else}
   TSequentialRecNo = Integer;
+  TFileOffset = Integer;
 {$endif}
 
 //-------------------------------------
