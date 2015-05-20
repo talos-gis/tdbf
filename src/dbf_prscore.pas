@@ -587,9 +587,6 @@ begin
       // goto next argument
       Inc(I);
     end;
-    // don't need this record anymore
-    Dispose(ExprRec);
-    ExprRec := nil;
   end else begin
     // inc memory pointer so we know if we are first
     ExprRec^.ResetDest := MemoryPos^ = Memory^;
@@ -626,16 +623,16 @@ begin
 
     // link result to target argument
     ExprRec^.Res := TDynamicType.Create(Memory, MemoryPos, MemSize);
+  end;
 
-    // link to next operation
-    if FCurrentRec = nil then
-    begin
-      FCurrentRec := ExprRec;
-      FLastRec := ExprRec;
-    end else begin
-      FLastRec^.Next := ExprRec;
-      FLastRec := ExprRec;
-    end;
+  // link to next operation
+  if FCurrentRec = nil then
+  begin
+    FCurrentRec := ExprRec;
+    FLastRec := ExprRec;
+  end else begin
+    FLastRec^.Next := ExprRec;
+    FLastRec := ExprRec;
   end;
 end;
 

@@ -107,6 +107,7 @@ following changes thx paulenandrew:
 - fix error handling in parser if too many arguments/operands
 - fix sporadic access violation and other errors when creating/destroying a table in a multi-threaded application (fixes bug #68)
 - fix writing of EOF terminator when inserting a record (fixes bug #58)
+- fix incorrect parser linked list
 
 ------------------------
 V6.9.1
