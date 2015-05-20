@@ -86,6 +86,7 @@ type
     procedure Open;
     procedure Close;
     procedure Zap;
+    procedure DeleteMdxFile;
 
     procedure FinishCreate(AFieldDefs: TDbfFieldDefs; MemoSize: Integer);
     function GetIndexByName(AIndexName: string): TIndexFile;
@@ -118,6 +119,7 @@ type
     procedure UnlockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer);
+    procedure DeleteIndexFile(AIndexFile: TIndexFile);
 
     property MemoFile: TMemoFile read FMemoFile;
     property FieldDefs: TDbfFieldDefs read FFieldDefs;
@@ -839,6 +841,13 @@ begin
   FlushHeader;
   // update indexes
   RegenerateIndexes;
+end;
+
+procedure TDbfFile.DeleteMdxFile;
+begin
+  PDbfHdr(Header)^.MDXFlag := 0;
+  WriteHeader;
+  DeleteIndexFile(MdxFile);
 end;
 
 procedure TDbfFile.WriteHeader;
@@ -2244,13 +2253,7 @@ begin
               FIndexNames.Delete(addedIndexName);
             // if no file created, do not destroy!
             if addedIndexFile >= 0 then
-            begin
-              lIndexFile.Close;
-              Sysutils.DeleteFile(lIndexFileName);
-              if FMdxFile = lIndexFile then
-                FMdxFile := nil;
-              lIndexFile.Free;
-            end;
+              DeleteIndexFile(lIndexFile);
             raise;
           end;
         end;
@@ -2679,6 +2682,21 @@ begin
     end;
     Inc(I);
   end;
+end;
+
+procedure TDbfFile.DeleteIndexFile(AIndexFile: TIndexFile);
+var
+  Index: Integer;
+begin
+  for Index:= Pred(FIndexNames.Count) downto 0 do
+    if FIndexNames.Objects[Index]=AIndexFile then
+      FIndexNames.Delete(Index);
+  FIndexFiles.Remove(AIndexFile);
+  AIndexFile.Close;
+  AIndexFile.DeleteFile;
+  if FMdxFile = AIndexFile then
+    FMdxFile := nil;
+  AIndexFile.Free;
 end;
 
 procedure TDbfFile.SetRecordSize(NewSize: Integer);

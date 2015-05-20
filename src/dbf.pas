@@ -408,6 +408,7 @@ type
     procedure PackTable;
     procedure EmptyTable;
     procedure Zap;
+    function DeleteMdxFile: Boolean;
 
 {$ifndef SUPPORT_INITDEFSFROMFIELDS}
     procedure InitFieldDefsFromFields;
@@ -1627,6 +1628,18 @@ begin
   // are we active?
   CheckActive;
   FDbfFile.Zap;
+end;
+
+function TDbf.DeleteMdxFile: Boolean;
+begin
+  CheckActive;
+  Result:= Assigned(DbfFile.MdxFile);
+  if Result then
+  begin
+    IndexName:= '';
+    DbfFile.DeleteMdxFile;
+    InternalInitFieldDefs;
+  end;
 end;
 
 procedure TDbf.RestructureTable(ADbfFieldDefs: TDbfFieldDefs; Pack: Boolean);

@@ -96,6 +96,7 @@ following changes thx paulenandrew:
 - consistently use EParserException for parser error
 - fix error handling if invalid record number in index
 - recalculate key length when rebuilding an index, to correct it if necessary
+- implement DeleteMdxFile to delete MDX index file and clear MDX flag, implement DeleteIndexFile to delete index file
 
 ------------------------
 V6.9.1
