@@ -16,7 +16,8 @@ type
   EPagedFile = class(Exception)
   end;
 
-  TPagedFileMode = (pfNone, pfMemoryCreate, pfMemoryOpen, pfExclusiveCreate, 
+  TDbfProgressEvent = procedure(Sender: TObject; Position, Max: Integer; var Aborted: Boolean; Msg: string) of object;
+  TPagedFileMode = (pfNone, pfMemoryCreate, pfMemoryOpen, pfExclusiveCreate,
     pfExclusiveOpen, pfReadWriteCreate, pfReadWriteOpen, pfReadOnly);
 
   // access levels:
@@ -85,6 +86,7 @@ type
     FBufferMaxSize: Integer;
     FBufferModified: Boolean;
     FWriteError: Boolean;
+    FOnProgress: TDbfProgressEvent;
   protected
     procedure SetHeaderOffset(NewValue: Integer); virtual;
     procedure SetRecordSize(NewValue: Integer); virtual;
@@ -137,6 +139,7 @@ type
     procedure ResetError;
     function  ResyncSharedReadBuffer: Boolean;
     function  ResyncSharedFlushBuffer: Boolean;
+    procedure DoProgress(Position, Max: Integer; Msg: string);
 
     function  LockPage(const PageNo: Integer; const Wait: Boolean): Boolean;
     function  LockAllPages(const Wait: Boolean): Boolean;
@@ -164,6 +167,7 @@ type
     property Stream: TStream read FStream write SetStream;
     property BufferAhead: Boolean read FBufferAhead write SetBufferAhead;
     property WriteError: Boolean read FWriteError;
+    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
   end;
 
 implementation
@@ -890,6 +894,17 @@ begin
   Result := IsSharedAccess;
   if Result then
     FlushBuffer;
+end;
+
+procedure TPagedFile.DoProgress(Position, Max: Integer; Msg: string);
+var
+  Aborted: Boolean;
+begin
+  Aborted:= False;
+  if Assigned(FOnProgress) then
+    FOnProgress(Self, Position, Max, Aborted, Msg);
+  if Aborted then
+    Abort;
 end;
 
 // BDE compatible lock offset found!

@@ -40,5 +40,7 @@ initialization
   STRING_PROGRESS_PACKINGRECORDS      := 'Packt datensätzen';
   STRING_PROGRESS_READINGRECORDS      := 'Liest datensätzen';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Anhängt datensätzen';
+  STRING_PROGRESS_SORTING_RECORDS     := 'Sortiert datensätzen';
+  STRING_PROGRESS_WRITING_RECORDS     := 'Schreibt datensätzen';
 end.
 

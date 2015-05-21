@@ -40,5 +40,7 @@ initialization
   STRING_PROGRESS_PACKINGRECORDS      := 'Packing records';
   STRING_PROGRESS_READINGRECORDS      := 'Reading records';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Appending records';
+  STRING_PROGRESS_SORTING_RECORDS     := 'Sorting records';
+  STRING_PROGRESS_WRITING_RECORDS     := 'Writing records';
 end.
 

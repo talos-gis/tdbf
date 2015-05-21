@@ -42,6 +42,8 @@ initialization
 
   STRING_PROGRESS_PACKINGRECORDS      := 'упаковывает записи';
   STRING_PROGRESS_READINGRECORDS      := 'считывает записи';
-  STRING_PROGRESS_APPENDINGRECORDS    := 'добавляет записи ';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'добавляет записи';
+  STRING_PROGRESS_SORTING_RECORDS     := 'он сортирует записи';
+  STRING_PROGRESS_WRITING_RECORDS     := 'пишет записи';
 end.
 

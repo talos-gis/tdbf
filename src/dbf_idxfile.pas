@@ -278,6 +278,8 @@ type
     FCollation: PCollationTable;
     FCompareKeys: TDbfCompareKeysEvent;
     FOnLocaleError: TDbfLocaleErrorEvent;
+    FProgressPosition: Integer;
+    FProgressMax: Integer;
 
     function  GetNewPageNo: Integer;
     procedure TouchHeader(AHeader: Pointer);
@@ -363,6 +365,13 @@ type
     procedure DeleteIndex(const AIndexName: string);
     procedure RepageFile;
     procedure CompactFile;
+    procedure BulkLoadIndex;
+    procedure BulkLoadIndexes;
+    procedure MergeSort(List: pPointerList; L, R: Integer);
+    procedure MergeSort2(List, TempList: pPointerList; L, R: Integer);
+    procedure MergeSort3(List, TempList: pPointerList; L0, L1, R0, R1: Integer);
+    procedure MergeSortCheckCancel;
+    function  MergeSortCompare(Item1, Item2: Pointer): Integer;
     procedure PrepareRename(NewFileName: string);
     procedure CalcRegenerateIndexes;
 
@@ -2830,6 +2839,226 @@ begin
   OpenFile;
   ReadIndexes;
   SelectIndexVars(prevIndex);
+end;
+
+const
+  BulkLoadMemoryTotal = $8000000; {128 MB}
+  BulkLoadMemoryAllocSize = $100000; {1 MB}
+
+procedure TIndexFile.BulkLoadIndex;
+var
+  ADbfFile: TDbfFile;
+  BufferMax: Integer;
+  BufferCount: Integer;
+  EntryIndex: Integer;
+  EntryCount: Integer;
+  EntryMax: Integer;
+  PPEntries: Pointer;
+  PPEntry: Pointer;
+  PEntry: PMdxEntry;
+  KeyRecLen: Word;
+  KeyLen: Word;
+  Len: Word;
+  BufferList: TList;
+  Index: Integer;
+  AUniqueMode: TIndexUniqueType;
+begin
+  ADbfFile := TDbfFile(FDbfFile);
+  FProgressMax := ADbfFile.RecordCount;
+  KeyRecLen := SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen);
+  EntryMax := BulkLoadMemoryTotal div KeyRecLen;
+  if EntryMax > FProgressMax then
+    EntryMax := FProgressMax;
+  BufferMax := BulkLoadMemoryAllocSize div KeyRecLen;
+  GetMem(PPEntries, EntryMax * SizeOf(Pointer));
+  try
+    FillChar(PPEntries^, EntryMax * SizeOf(Pointer), 0);
+    BufferList := TList.Create;
+    try
+      KeyLen := SwapWordLE(PIndexHdr(FIndexHeader)^.KeyLen);
+      FProgressPosition := 0;
+      DoProgress(FProgressPosition, FProgressMax, STRING_PROGRESS_READINGRECORDS);
+      while FProgressPosition < FProgressMax do
+      begin
+        DoProgress(-1, FProgressMax, STRING_PROGRESS_READINGRECORDS);
+        PPEntry := PPEntries;
+        EntryCount := 0;
+        while (FProgressPosition < FProgressMax) and (EntryCount < EntryMax) do
+        begin
+          if FProgressPosition < EntryMax then
+          begin
+            if (EntryCount mod BufferMax) = 0 then
+            begin
+              PEntry := PMdxEntry(PPEntry^);
+              if PEntry = nil then
+              begin
+                BufferCount := EntryMax - EntryCount;
+                if BufferCount > BufferMax then
+                  BufferCount := BufferMax;
+                GetMem(PEntry, BufferCount * KeyRecLen);
+                try
+                  BufferList.Add(PEntry);
+                except
+                  FreeMem(PEntry);
+                  raise;
+                end;
+              end;
+            end
+            else
+              Inc(PChar(PEntry), KeyRecLen);
+            PMdxEntry(PPEntry^) := PEntry;
+          end
+          else
+            PEntry := PMdxEntry(PPEntry^);
+          Inc(FProgressPosition);
+          FillChar(PEntry^, KeyRecLen, 0);
+          ADbfFile.ReadRecord(FProgressPosition, ADbfFile.PrevBuffer);
+          FUserKey := ExtractKeyFromBuffer(ADbfFile.PrevBuffer);
+          if Assigned(FUserKey) then
+          begin
+            PEntry^.RecBlockNo := FProgressPosition;
+            Len := KeyLen;
+            if (FCurrentParser.ResultType=etString) and (Len>FCurrentParser.ResultBufferSize) then
+              Len:= FCurrentParser.ResultBufferSize;
+            Move(FUserKey^, PEntry^.KeyData, Len);
+            Inc(PChar(PPEntry), SizeOf(Pointer));
+            Inc(EntryCount);
+          end;
+          DoProgress(FProgressPosition, FProgressMax, STRING_PROGRESS_READINGRECORDS);
+        end;
+        DoProgress(-1, FProgressMax, STRING_PROGRESS_SORTING_RECORDS);
+        MergeSort(PPEntries, 0, Pred(EntryCount));
+        DoProgress(-1, FProgressMax, STRING_PROGRESS_WRITING_RECORDS);
+        if FUniqueMode = iuUnique then
+          AUniqueMode := iuDistinct
+        else
+          AUniqueMode := FUniqueMode;
+        EntryIndex := 0;
+        PPEntry := PPEntries;
+        while EntryIndex < EntryCount do
+        begin
+          PEntry := PMdxEntry(PPEntry^);
+          FUserRecNo := PEntry^.RecBlockNo;
+          FUserKey := @PEntry^.KeyData;
+          InsertCurrent(AUniqueMode);
+          Inc(PChar(PPEntry), SizeOf(Pointer));
+          Inc(EntryIndex);
+          DoProgress(FProgressPosition, FProgressMax, STRING_PROGRESS_WRITING_RECORDS);
+        end;
+      end;
+    finally
+      for Index:= 0 to Pred(BufferList.Count) do
+        FreeMem(BufferList[Index]);
+      BufferList.Free;
+    end;
+  finally
+    FreeMem(PPEntries);
+  end;
+end;
+
+procedure TIndexFile.BulkLoadIndexes;
+var
+  curSel: Integer;
+  I: Integer;
+begin
+  if (FUpdateMode = umAll) or (FSelectedIndex = -1) then
+  begin
+    curSel := FSelectedIndex;
+    try
+      I := 0;
+      while I < SwapWordLE(PMdxHdr(Header)^.TagsUsed) do
+      begin
+        SelectIndexVars(I);
+        BulkLoadIndex;
+        Inc(I);
+      end;
+    finally
+      SelectIndexVars(curSel);
+    end;
+  end
+  else
+    BulkLoadIndex;
+end;
+
+procedure TIndexFile.MergeSort(List: pPointerList; L, R: Integer);
+var
+  TempList: pPointerList;
+  Size: Integer;
+begin
+  if L<R then
+  begin
+    Size:= Succ(R-L)*SizeOf(Pointer);
+    GetMem(TempList, Size);
+    try
+      MergeSort2(List, TempList, L, R);
+      MoveMemory(List, TempList, Size);
+    finally
+      FreeMem(TempList);
+    end;
+  end;
+end;
+
+procedure TIndexFile.MergeSort2(List, TempList: pPointerList; L, R: Integer);
+var
+  C: Integer;
+  M: Integer;
+  L1: Integer;
+  R0: Integer;
+begin
+  if L<R then
+  begin
+    C:= Succ(R-L);
+    M:= L+Pred(C div 2);
+    L1:= M;
+    R0:= Succ(M);
+    MergeSort2(List, TempList, L, L1);
+    MergeSort2(List, TempList, R0, R);
+    MergeSort3(List, TempList, L, L1, R0, R);
+    MoveMemory(@List[L], @TempList[L], C*SizeOf(Pointer));
+  end;
+end;
+
+procedure TIndexFile.MergeSort3(List, TempList: pPointerList;
+  L0, L1, R0, R1: Integer);
+var
+  I: Integer;
+
+  procedure MergeAppend(var J: Integer);
+  begin
+    MergeSortCheckCancel;
+    TempList[I]:= List[J];
+    Inc(I);
+    Inc(J);
+  end;
+
+begin
+  I:= L0;
+  while (L0<=L1) and (R0<=R1) do
+  begin
+    if MergeSortCompare(List[L0], List[R0])<=0 then
+      MergeAppend(L0)
+    else
+      MergeAppend(R0);
+  end;
+  while L0<=L1 do
+    MergeAppend(L0);
+  while R0<=R1 do
+    MergeAppend(R0);
+end;
+
+procedure TIndexFile.MergeSortCheckCancel;
+begin
+  DoProgress(FProgressPosition, FProgressMax, '');
+end;
+
+function TIndexFile.MergeSortCompare(Item1, Item2: Pointer): Integer;
+var
+  KeyData1: PChar;
+  KeyData2: PChar;
+begin
+  KeyData1 := @PMdxEntry(Item1).KeyData;
+  KeyData2 := @PMdxEntry(Item2).KeyData;
+  Result:= CompareKeys(KeyData1, KeyData2);
 end;
 
 procedure TIndexFile.PrepareRename(NewFileName: string);

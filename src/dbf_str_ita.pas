@@ -40,5 +40,7 @@ initialization
   STRING_PROGRESS_PACKINGRECORDS      := 'Comprime records';
   STRING_PROGRESS_READINGRECORDS      := 'Legge records';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Agguinge records';
+  STRING_PROGRESS_SORTING_RECORDS     := 'Ordina records';
+  STRING_PROGRESS_WRITING_RECORDS     := 'Scrive records';
 end.
 

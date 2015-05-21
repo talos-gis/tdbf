@@ -116,6 +116,7 @@ following changes thx paulenandrew:
 - add OnProgress event to report the progress of long-running functions and allow cancellation, used when copying and restructuring (similar to BDE)
 - add missing message translations (fr, ita, nl, pl, ru)
 - include deleted records in distinct index (compatible with BDE)
+- build index using partial bulkloading, achieves much better performance (comparable to BDE)
 
 ------------------------
 V6.9.1

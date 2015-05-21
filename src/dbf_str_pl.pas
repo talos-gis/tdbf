@@ -40,5 +40,7 @@ initialization
   STRING_PROGRESS_PACKINGRECORDS      := 'Pakuje rekordy';
   STRING_PROGRESS_READINGRECORDS      := 'Czyta rekordy';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Docza rekordy';
+  STRING_PROGRESS_SORTING_RECORDS     := 'Sortuje rekordy';
+  STRING_PROGRESS_WRITING_RECORDS     := 'Pisze rekordy';
 end.
 

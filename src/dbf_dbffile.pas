@@ -35,7 +35,6 @@ type
 //====================================================================
   TDbfIndexInvalidEvent = procedure(Sender: TObject; var Handled, DeleteLink: Boolean) of object;
   TDbfIndexMissingEvent = procedure(var DeleteLink: Boolean) of object;
-  TDbfProgressEvent = procedure(Sender: TObject; Position, Max: Integer; var Aborted: Boolean; Msg: string) of object;
   TUpdateNullField = (unClear, unSet);
 
 //====================================================================
@@ -69,7 +68,6 @@ type
     FOnLocaleError: TDbfLocaleErrorEvent;
     FOnIndexInvalid: TDbfIndexInvalidEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
-    FOnProgress: TDbfProgressEvent;
 
     function  HasBlob: Boolean;
     function  GetMemoExt: string;
@@ -126,7 +124,6 @@ type
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure DeleteIndexFile(AIndexFile: TIndexFile);
-    procedure DoProgress(Position, Max: Integer; Msg: string);
 
     property MemoFile: TMemoFile read FMemoFile;
     property FieldDefs: TDbfFieldDefs read FFieldDefs;
@@ -148,7 +145,6 @@ type
     property OnIndexInvalid: TDbfIndexInvalidEvent read FOnIndexInvalid write FOnIndexInvalid;
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
-    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
   end;
 
 //====================================================================
@@ -2336,8 +2332,8 @@ procedure TDbfFile.PackIndex(lIndexFile: TIndexFile; AIndexName: string; CreateI
 var
   prevMode: TIndexUpdateMode;
   prevIndex: string;
-  cur, last: Integer;
 {$ifdef USE_CACHE}
+  cur, last: Integer;
   prevCache: Integer;
 {$endif}
   lUniqueMode: TIndexUniqueType;
@@ -2362,8 +2358,6 @@ begin
     lIndexFile.Clear;
   end;
   // prepare update
-  cur := 1;
-  last := RecordCount;
 {$ifdef USE_CACHE}
   BufferAhead := true;
   prevCache := lIndexFile.CacheSize;
@@ -2373,6 +2367,9 @@ begin
 {$endif}
   try
     try
+{$ifdef USE_CACHE}
+      cur := 1;
+      last := RecordCount;
       DoProgress(0, last, STRING_PROGRESS_READINGRECORDS);
       if lIndexFile.UniqueMode = iuUnique then
         lUniqueMode := iuDistinct
@@ -2385,6 +2382,14 @@ begin
         DoProgress(cur, last, STRING_PROGRESS_READINGRECORDS);
         inc(cur);
       end;
+{$else}
+      lIndexFile.OnProgress := FOnProgress;
+      try
+        lIndexFile.BulkLoadIndexes;
+      finally
+        lIndexFile.OnProgress := nil;
+      end;
+{$endif}
     except
       on E: EDbfError do
       begin
@@ -2775,17 +2780,6 @@ begin
   if FMdxFile = AIndexFile then
     FMdxFile := nil;
   AIndexFile.Free;
-end;
-
-procedure TDbfFile.DoProgress(Position, Max: Integer; Msg: string);
-var
-  Aborted: Boolean;
-begin
-  Aborted:= False;
-  if Assigned(FOnProgress) then
-    FOnProgress(Self, Position, Max, Aborted, Msg);
-  if Aborted then
-    Abort;
 end;
 
 procedure TDbfFile.SetRecordSize(NewSize: Integer);

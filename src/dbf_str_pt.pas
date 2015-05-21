@@ -40,5 +40,7 @@ initialization
   STRING_PROGRESS_PACKINGRECORDS      := 'Empacota registros';
   STRING_PROGRESS_READINGRECORDS      := 'Lê registros';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Anexa registros';
+  STRING_PROGRESS_SORTING_RECORDS     := 'Ordena records';
+  STRING_PROGRESS_WRITING_RECORDS     := 'Escreve records';
 end.
 
