@@ -1439,15 +1439,15 @@ begin
         // write record
         DestDbfFile.WriteRecord(lWRecNo, pDestBuff);
         // update indexes
-        for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
-        begin
-          lIndexFile := TIndexFile(DestDbfFile.IndexFiles.Items[I]);
-          if lIndexFile.UniqueMode = iuUnique then
-            lUniqueMode := iuDistinct
-          else
-            lUniqueMode := lIndexFile.UniqueMode;
-          lIndexFile.Insert(lWRecNo, pDestBuff, lUniqueMode);
-        end;
+//      for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
+//      begin
+//        lIndexFile := TIndexFile(DestDbfFile.IndexFiles.Items[I]);
+//        if lIndexFile.UniqueMode = iuUnique then
+//          lUniqueMode := iuDistinct
+//        else
+//          lUniqueMode := lIndexFile.UniqueMode;
+//        lIndexFile.Insert(lWRecNo, pDestBuff, lUniqueMode);
+//      end;
 
         // go to next record
         Inc(lWRecNo);
@@ -1491,6 +1491,7 @@ begin
     if DbfFieldDefs <> nil then
       FreeMem(pDestBuff);
   end;
+  RegenerateIndexes;
 end;
 
 procedure TDbfFile.RegenerateIndexes;
