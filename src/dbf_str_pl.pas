@@ -1,5 +1,7 @@
 unit dbf_str;
 
+{ Polish }
+
 interface
 
 {$I dbf_common.inc}
@@ -15,6 +17,7 @@ initialization
   STRING_RECORD_LOCKED                := 'Rekord zablokowany.';
   STRING_READ_ERROR                   := 'Nieprzeczytane.';
   STRING_WRITE_ERROR                  := 'Niezapisano(Brak miejsca na dysku?)';
+  STRING_WRITE_INDEX_ERROR            := 'Niezapisano; prawdopodobnie uszkodzone indeksy. (Disk full?)';
   STRING_KEY_VIOLATION                := 'Konflikt klucza. (Klucz obecny w pliku).'+#13+#10+
                                          'Indeks: %s'+#13+#10+'Rekord=%d Klucz=''%s''';
 
@@ -23,7 +26,6 @@ initialization
   STRING_INVALID_FIELD_COUNT          := 'Z³a liczba pól: %d (dozwolone 1 do 4095).';
   STRING_INVALID_FIELD_TYPE           := 'B³êdny typ pola ''%c'' dla pola ''%s''.';
   STRING_INVALID_VCL_FIELD_TYPE       := 'Nie mogê tworzyæ pola "%s", typ pola VCL %x nie wspierany przez DBF.';
-
 
   STRING_INVALID_MDX_FILE             := 'Uszkodzony plik bazy.';
   STRING_INDEX_BASED_ON_UNKNOWN_FIELD := 'Kluczowe pole indeksu "%s" nie istnieje';

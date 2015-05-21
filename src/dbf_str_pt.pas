@@ -1,6 +1,6 @@
 unit dbf_str;
 
-{ note this is Brazilian Portuguese }
+{ Brazilian Portuguese }
 
 interface
 
@@ -41,3 +41,4 @@ initialization
   STRING_PROGRESS_READINGRECORDS      := 'Lê registros';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Anexa registros';
 end.
+

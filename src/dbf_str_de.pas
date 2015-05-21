@@ -1,5 +1,7 @@
 unit dbf_str;
 
+{ German }
+
 interface
 
 {$I dbf_common.inc}
@@ -39,3 +41,4 @@ initialization
   STRING_PROGRESS_READINGRECORDS      := 'Liest datensätzen';
   STRING_PROGRESS_APPENDINGRECORDS    := 'Anhängt datensätzen';
 end.
+

@@ -1,5 +1,7 @@
 unit dbf_str;
 
+{ Spanish }
+
 interface
 
 {$I dbf_common.inc}
