@@ -109,10 +109,11 @@ following changes thx paulenandrew:
 - fix writing of EOF terminator when inserting a record (fixes bug #58)
 - fix incorrect parser linked list
 - if there is a file read/write error, raise an exception
-- Change index locking algorithm to avoid resyncs, achieves much better performance (consistent with BDE)
-- Use BufferAhead and DisableResyncOnPost by default when table is exclusive or write locked, achieves much better performance
-- Use dynamic buffer size, achieves much better performance with both random and sequential access (performance comparable to BDE)
-- Re-read current record if table is shared, under limited conditions so that performance is not affected (similar to BDE)
+- change index locking algorithm to avoid resyncs, achieves much better performance (consistent with BDE)
+- use BufferAhead and DisableResyncOnPost by default when table is exclusive or write locked, achieves much better performance
+- use dynamic buffer size, achieves much better performance with both random and sequential access (performance similar to BDE)
+- re-read current record if table is shared, under limited conditions so that performance is not affected (similar to BDE)
+- add OnProgress event to report the progress of long-running functions and allow cancellation, used when copying and restructuring (similar to BDE)
 
 ------------------------
 V6.9.1

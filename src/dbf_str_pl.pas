@@ -33,5 +33,9 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Nie mogê stworzyæ indeksu: za du¿o w pliku.';
   STRING_INDEX_NOT_EXIST              := 'Brak indeksu "%s".';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Operacja wymaga dostêpu w trybie Exclusive.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Pakuje rekordy';
+  STRING_PROGRESS_READINGRECORDS      := 'Czyta rekordy';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'Docza rekordy';
 end.
 

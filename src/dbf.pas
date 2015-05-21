@@ -195,6 +195,7 @@ type
     FOnIndexMissing: TDbfIndexMissingEvent;
     FOnCompareRecord: TNotifyEvent;
     FOnCopyDateTimeAsString: TConvertFieldEvent;
+    FOnProgress: TDbfProgressEvent;
     FScrolling: Boolean;
 
     FKeyBufferLen: Integer;
@@ -464,6 +465,7 @@ type
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnCopyDateTimeAsString: TConvertFieldEvent read FOnCopyDateTimeAsString write FOnCopyDateTimeAsString;
     property OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
+    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
 
     // redeclared data set properties
     property Active;
@@ -1687,7 +1689,12 @@ begin
   oldIndexName := IndexName;
   IndexName := EmptyStr;
   // pack
-  FDbfFile.RestructureTable(nil, true);
+  FDbfFile.OnProgress := FOnProgress;
+  try
+    FDbfFile.RestructureTable(nil, true);
+  finally
+    FDbfFile.OnProgress := nil;
+  end;
   // reselect index
   IndexName := oldIndexName;
 end;
@@ -1697,6 +1704,7 @@ var
   lPhysFieldDefs, lFieldDefs: TDbfFieldDefs;
   lSrcField, lDestField: TField;
   I: integer;
+  cur, last: Integer;
 begin
   FInCopyFrom := true;
   lFieldDefs := TDbfFieldDefs.Create(nil);
@@ -1754,33 +1762,60 @@ begin
     if DataSet is TDbf then
       TDbf(DataSet).DbfFile.BufferAhead := true;
 {$endif}      
-    while not DataSet.EOF do
+    cur := 0;
+    if Assigned(FOnProgress) and (DataSet is TDbf) then
     begin
-      Append;
-      for I := 0 to Pred(FieldCount) do
+      last := TDbf(DataSet).PhysicalRecordCount;
+      FDbfFile.OnProgress := FOnProgress;
+      FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+    end
+    else
+      last:= -1;
+    try
+      while not DataSet.EOF do
       begin
-        lSrcField := DataSet.Fields[I];
-        lDestField := Fields[I];
-        if not lSrcField.IsNull then
+        Append;
+        for I := 0 to Pred(FieldCount) do
         begin
-          if lSrcField.DataType = ftDateTime then
+          lSrcField := DataSet.Fields[I];
+          lDestField := Fields[I];
+          if not lSrcField.IsNull then
           begin
-            if FCopyDateTimeAsString then
+            if lSrcField.DataType = ftDateTime then
             begin
-              lDestField.AsString := lSrcField.AsString;
-              if Assigned(FOnCopyDateTimeAsString) then
-                FOnCopyDateTimeAsString(Self, lDestField, lSrcField)
+              if FCopyDateTimeAsString then
+              begin
+                lDestField.AsString := lSrcField.AsString;
+                if Assigned(FOnCopyDateTimeAsString) then
+                  FOnCopyDateTimeAsString(Self, lDestField, lSrcField)
+              end else
+                lDestField.AsDateTime := lSrcField.AsDateTime;
             end else
-              lDestField.AsDateTime := lSrcField.AsDateTime;
-          end else
-            lDestField.Assign(lSrcField);
+              lDestField.Assign(lSrcField);
+          end;
+        end;
+        Post;
+        if DataSet is TDbf then
+          if TDbf(DataSet).IsDeleted then
+            Delete;
+        DataSet.Next;
+        if last >= 0 then
+        begin
+          if TDbf(DataSet).FCursor is TIndexCursor then
+            Inc(cur)
+          else
+            cur := TDbf(DataSet).PhysicalRecNo;
+          FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
         end;
       end;
-      Post;
-      if DataSet is TDbf then
-        if TDbf(DataSet).IsDeleted then
-          Delete;
-      DataSet.Next;
+      if (last >= 0) and (cur < last) then
+      begin
+        cur := last;
+        FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+      end;
+    finally
+      if last >= 0 then
+        FDbfFile.OnProgress:= nil;
     end;
     Close;
   finally
@@ -2534,7 +2569,12 @@ end;
 procedure TDbf.RegenerateIndexes;
 begin
   CheckBrowseMode;
-  FDbfFile.RegenerateIndexes;
+  FDbfFile.OnProgress := FOnProgress;
+  try
+    FDbfFile.RegenerateIndexes;
+  finally
+    FDbfFile.OnProgress := nil;
+  end;
 end;
 
 {$ifdef SUPPORT_DEFAULT_PARAMS}

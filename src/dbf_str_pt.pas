@@ -35,4 +35,8 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Não se pode criar o índice: demasiados índices no archivo.';
   STRING_INDEX_NOT_EXIST              := 'Ìndice "%s" não existe.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Acesso Exclusivo requerido para esta operação.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Empacota registros';
+  STRING_PROGRESS_READINGRECORDS      := 'Lê registros';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'Anexa registros';
 end.

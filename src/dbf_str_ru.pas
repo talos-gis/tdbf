@@ -37,5 +37,9 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Ќевозможно создать еще один индекс. ‘айл полон.';
   STRING_INDEX_NOT_EXIST              := '»ндекс "%s" не существует.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Ќевозможно выполнить - сначала нужно получить монопольный доступ.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'упаковывает записи';
+  STRING_PROGRESS_READINGRECORDS      := 'считывает записи';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'добавл€ет записи ';
 end.
 

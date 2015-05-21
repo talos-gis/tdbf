@@ -32,5 +32,9 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Toevoegen index onmogenlijk: te veel indexen in bestand.';
   STRING_INDEX_NOT_EXIST              := 'Index "%s" bestaat niet.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Exclusieve toegang is vereist voor deze actie.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Packs records';
+  STRING_PROGRESS_READINGRECORDS      := 'Leest records';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'Voegt records';
 end.
 

@@ -33,4 +33,8 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Erzeugen eines Index nicht möglich: Zu viele Indizes in der Datei.';
   STRING_INDEX_NOT_EXIST              := 'Index "%s" existiert nicht.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Exclusivzugriff für diese Aktion nötig.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Packt datensätzen';
+  STRING_PROGRESS_READINGRECORDS      := 'Liest datensätzen';
+  STRING_PROGRESS_RECORDSAPPENDED     := 'Anhängt datensätzen';
 end.

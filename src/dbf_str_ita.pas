@@ -27,4 +27,8 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Non è possibile creare indice: Troppi indici aperti.';
   STRING_INDEX_NOT_EXIST              := 'Indice "%s" non esiste.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'L''Accesso in esclusiva è richiesto per questa operazione.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Comprime records';
+  STRING_PROGRESS_READINGRECORDS      := 'Legge records';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'Agguinge records';
 end.

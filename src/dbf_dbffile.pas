@@ -35,6 +35,7 @@ type
 //====================================================================
   TDbfIndexInvalidEvent = procedure(Sender: TObject; var Handled, DeleteLink: Boolean) of object;
   TDbfIndexMissingEvent = procedure(var DeleteLink: Boolean) of object;
+  TDbfProgressEvent = procedure(Sender: TObject; Position, Max: Integer; var Aborted: Boolean; Msg: string) of object;
   TUpdateNullField = (unClear, unSet);
 
 //====================================================================
@@ -68,6 +69,7 @@ type
     FOnLocaleError: TDbfLocaleErrorEvent;
     FOnIndexInvalid: TDbfIndexInvalidEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
+    FOnProgress: TDbfProgressEvent;
 
     function  HasBlob: Boolean;
     function  GetMemoExt: string;
@@ -124,6 +126,7 @@ type
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure DeleteIndexFile(AIndexFile: TIndexFile);
+    procedure DoProgress(Position, Max: Integer; Msg: string);
 
     property MemoFile: TMemoFile read FMemoFile;
     property FieldDefs: TDbfFieldDefs read FFieldDefs;
@@ -145,6 +148,7 @@ type
     property OnIndexInvalid: TDbfIndexInvalidEvent read FOnIndexInvalid write FOnIndexInvalid;
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnLocaleError: TDbfLocaleErrorEvent read FOnLocaleError write FOnLocaleError;
+    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
   end;
 
 //====================================================================
@@ -1262,6 +1266,7 @@ var
   BlobStream: TMemoryStream;
   lIndexFile: TIndexFile;
   lUniqueMode: TIndexUniqueType;
+  last: Integer;
 begin
   // nothing to do?
   if (RecordSize < 1) or ((DbfFieldDefs = nil) and not Pack) then
@@ -1385,7 +1390,10 @@ begin
     DestDbfFile.BufferAhead := true;
 {$endif}
     lWRecNo := 1;
-    for lRecNo := 1 to RecordCount do
+    last := RecordCount;
+    if Pack then
+      DoProgress(0, last, STRING_PROGRESS_PACKINGRECORDS);
+    for lRecNo := 1 to last do
     begin
       // read record from original dbf
       ReadRecord(lRecNo, pBuff);
@@ -1448,6 +1456,8 @@ begin
         // go to next record
         Inc(lWRecNo);
       end;
+      if Pack then
+        DoProgress(lRecNo, last, STRING_PROGRESS_PACKINGRECORDS);
     end;
 
 {$ifdef USE_CACHE}
@@ -2363,6 +2373,7 @@ begin
 {$endif}
   try
     try
+      DoProgress(0, last, STRING_PROGRESS_READINGRECORDS);
       if lIndexFile.UniqueMode = iuUnique then
         lUniqueMode := iuDistinct
       else
@@ -2371,6 +2382,7 @@ begin
       begin
         ReadRecord(cur, FPrevBuffer);
         lIndexFile.Insert(cur, FPrevBuffer, lUniqueMode);
+        DoProgress(cur, last, STRING_PROGRESS_READINGRECORDS);
         inc(cur);
       end;
     except
@@ -2763,6 +2775,17 @@ begin
   if FMdxFile = AIndexFile then
     FMdxFile := nil;
   AIndexFile.Free;
+end;
+
+procedure TDbfFile.DoProgress(Position, Max: Integer; Msg: string);
+var
+  Aborted: Boolean;
+begin
+  Aborted:= False;
+  if Assigned(FOnProgress) then
+    FOnProgress(Self, Position, Max, Aborted, Msg);
+  if Aborted then
+    Abort;
 end;
 
 procedure TDbfFile.SetRecordSize(NewSize: Integer);

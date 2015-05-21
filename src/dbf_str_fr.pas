@@ -3,28 +3,7 @@ unit dbf_str;
 interface
 
 {$I dbf_common.inc}
-
-var
-  STRING_FILE_NOT_FOUND: string;
-  STRING_VERSION: string;
-
-  STRING_RECORD_LOCKED: string;
-  STRING_KEY_VIOLATION: string;
-
-  STRING_INVALID_DBF_FILE: string;
-  STRING_FIELD_TOO_LONG: string;
-  STRING_INVALID_FIELD_COUNT: string;
-  STRING_INVALID_FIELD_TYPE: string;
-
-  STRING_INVALID_MDX_FILE: string;
-  STRING_INDEX_BASED_ON_UNKNOWN_FIELD: string;
-  STRING_INDEX_BASED_ON_INVALID_FIELD: string;
-  STRING_INDEX_EXPRESSION_TOO_LONG: string;
-  STRING_INVALID_INDEX_TYPE: string;
-  STRING_CANNOT_OPEN_INDEX: string;
-  STRING_TOO_MANY_INDEXES: string;
-  STRING_INDEX_NOT_EXIST: string;
-  STRING_NEED_EXCLUSIVE_ACCESS: string;
+{$I dbf_str.inc}
 
 implementation
 
@@ -52,5 +31,9 @@ initialization
   STRING_TOO_MANY_INDEXES             := 'Impossible de créer l''index: trop d''index dans le fichier.';
   STRING_INDEX_NOT_EXIST              := 'L''index "%s" n''existe pas.';
   STRING_NEED_EXCLUSIVE_ACCESS        := 'Access exclusif requis pour cette opération.';
+
+  STRING_PROGRESS_PACKINGRECORDS      := 'Emballe enregistrements';
+  STRING_PROGRESS_READINGRECORDS      := 'Lit enregistrements';
+  STRING_PROGRESS_APPENDINGRECORDS    := 'Ajoute enregistrements';
 end.
 
