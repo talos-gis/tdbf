@@ -114,6 +114,7 @@ following changes thx paulenandrew:
 - use dynamic buffer size, achieves much better performance with both random and sequential access (performance similar to BDE)
 - re-read current record if table is shared, under limited conditions so that performance is not affected (similar to BDE)
 - add OnProgress event to report the progress of long-running functions and allow cancellation, used when copying and restructuring (similar to BDE)
+- add missing message translations (fr, ita, nl, pl, ru)
 
 ------------------------
 V6.9.1
