@@ -427,7 +427,6 @@ function IndexNameNormalize(Value: string): string;
 implementation
 
 uses
-  RTLConsts,
   dbf_AnsiStrings,
   dbf_dbffile,
   dbf_fields,
@@ -4127,7 +4126,7 @@ begin
   if NeedLocks and (FIndexVersion >= xBaseIV) then
   begin
     if not LockPage(0, True) then
-      raise EPagedFile.Create(SWriteError);
+      raise EPagedFile.Create(STRING_WRITE_ERROR);
     Resync(False);
   end;
 end;

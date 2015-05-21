@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Rekord zablokowany.';
+  STRING_READ_ERROR                   := 'Nieprzeczytane.';
   STRING_WRITE_ERROR                  := 'Niezapisano(Brak miejsca na dysku?)';
   STRING_KEY_VIOLATION                := 'Konflikt klucza. (Klucz obecny w pliku).'+#13+#10+
                                          'Indeks: %s'+#13+#10+'Rekord=%d Klucz=''%s''';

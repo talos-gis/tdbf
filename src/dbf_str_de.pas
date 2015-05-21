@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Datensatz gesperrt.';
+  STRING_READ_ERROR                   := 'Lesefehler.';
   STRING_WRITE_ERROR                  := 'Schreibfehler (Festplatte voll?)';
   STRING_WRITE_INDEX_ERROR            := 'Schreibfehler; Indizes wahrscheinlich beschädigt. (Festplatte voll?)';
   STRING_KEY_VIOLATION                := 'Indexverletzung (Indexschlüssel bereits vorhanden)'+#13+#10+

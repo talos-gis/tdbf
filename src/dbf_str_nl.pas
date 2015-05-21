@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Record in gebruik.';
+  STRING_READ_ERROR                   := 'Error tijdens lezen.';
   STRING_WRITE_ERROR                  := 'Error tijdens schrijven. (Disk vol?)';
   STRING_KEY_VIOLATION                := 'Indexsleutel bestond al in bestand.'+#13+#10+
                                          'Index: %s'+#13+#10+'Record=%d Sleutel=''%s''';

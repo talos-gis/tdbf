@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Registro bloqueado.';
+  STRING_READ_ERROR                   := 'Error de lectura.';
   STRING_WRITE_ERROR                  := 'Error de escritura. (Disco lleno?)';
   STRING_WRITE_INDEX_ERROR            := 'Error de escritura; índices probablemente corruptos. (Disco lleno?)';
   STRING_KEY_VIOLATION                := 'Violación de clave. (Clave ya presente en archivo).'+#13+#10+

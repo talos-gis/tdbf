@@ -14,6 +14,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Record già in uso.';
+  STRING_READ_ERROR                   := 'Errore di lettura.';
 
   STRING_INVALID_DBF_FILE             := 'File DBF non valido.';
   STRING_FIELD_TOO_LONG               := 'Valore troppo elevato: %d caratteri (esso non può essere più di %d).';

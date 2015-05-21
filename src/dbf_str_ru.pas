@@ -18,6 +18,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Запись (строка таблицы) заблокирована.';
+  STRING_READ_ERROR                   := 'Ошибка чтения с диска.';
   STRING_WRITE_ERROR                  := 'Ошибка записи на диск (Диск заполнен?)';
   STRING_KEY_VIOLATION                := 'Ключевое значение не должно повторяться!.'+#13+#10+
                                          'Индекс: %s'+#13+#10+'Запись (строка)=%d  Ключ="%s".';

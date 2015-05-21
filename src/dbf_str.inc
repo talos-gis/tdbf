@@ -3,6 +3,7 @@ var
   STRING_VERSION: string;
 
   STRING_RECORD_LOCKED: string;
+  STRING_READ_ERROR: string;
   STRING_WRITE_ERROR: string;
   STRING_WRITE_INDEX_ERROR: string;
   STRING_KEY_VIOLATION: string;

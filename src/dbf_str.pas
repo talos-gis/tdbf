@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Record locked.';
+  STRING_READ_ERROR                   := 'Error while reading occured.';
   STRING_WRITE_ERROR                  := 'Error while writing occurred. (Disk full?)';
   STRING_WRITE_INDEX_ERROR            := 'Error while writing occurred; indexes probably corrupted. (Disk full?)';
   STRING_KEY_VIOLATION                := 'Key violation. (Key already present in file).'+#13+#10+

@@ -13,6 +13,7 @@ initialization
   STRING_VERSION                      := 'TDbf V%d.%d';
 
   STRING_RECORD_LOCKED                := 'Enregistrement verrouillé.';
+  STRING_READ_ERROR                   := 'Erreur de lecture.';
   STRING_KEY_VIOLATION                := 'Violation de clé. (doublon dans un index).'+#13+#10+
                                          'Index: %s'+#13+#10+'Enregistrement=%d Cle=''%s''';
 
