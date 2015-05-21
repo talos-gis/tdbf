@@ -119,7 +119,7 @@ type
     procedure InitRecordForIndex(DestBuf: PAnsiChar);
     procedure PackIndex(lIndexFile: TIndexFile; AIndexName: string; CreateIndex: Boolean);
     procedure RegenerateIndexes;
-    procedure LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
+    procedure LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer; Resync: Boolean);
     procedure UnlockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer);
@@ -2654,7 +2654,7 @@ begin
   Move(DbfGlobals.UserName[1], Buffer[lockoffset+8], FLockUserLen);
 end;
 
-procedure TDbfFile.LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer);
+procedure TDbfFile.LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer; Resync: Boolean);
 var
   Locked: Boolean;
 begin
@@ -2665,7 +2665,9 @@ begin
   if Locked then
   begin
     // reread data
-    ReadRecord(RecNo, Buffer);
+    if Resync then
+      if ResyncSharedReadBuffer then
+        ReadRecord(RecNo, Buffer);
     // store previous data for updating indexes
     Move(Buffer^, FPrevBuffer^, RecordSize);
     // lock succeeded, update lock info, if field present

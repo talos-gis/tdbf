@@ -106,6 +106,7 @@ type
     procedure WriteChar(c: Byte);
     procedure CheckCachedSize(const APosition: TPagedFileSize);
     procedure SynchronizeBuffer(IntRecNum: Integer);
+    function  ReadBuffer: Boolean;
     function  Read(Buffer: Pointer; ASize: Integer): Integer;
     function  ReadBlock(const BlockPtr: Pointer; const ASize, APosition: Integer): Integer;
     function  SingleReadRecord(IntRecNum: Integer; Buffer: Pointer): Integer;
@@ -134,6 +135,8 @@ type
     function  FileCreated: Boolean;
     function  IsSharedAccess: Boolean;
     procedure ResetError;
+    function  ResyncSharedReadBuffer: Boolean;
+    function  ResyncSharedFlushBuffer: Boolean;
 
     function  LockPage(const PageNo: Integer; const Wait: Boolean): Boolean;
     function  LockAllPages(const Wait: Boolean): Boolean;
@@ -488,7 +491,15 @@ begin
   if FBufferOffset + FBufferReadSize > FCachedSize then
     FBufferReadSize := FCachedSize - FBufferOffset;
   FBufferSize := FBufferReadSize;
-  if FBufferReadSize <> 0 then
+//if FBufferReadSize <> 0 then
+//  FBufferReadSize := ReadBlock(FBufferPtr, FBufferReadSize, FBufferOffset);
+  ReadBuffer;
+end;
+
+function TPagedFile.ReadBuffer: Boolean;
+begin
+  Result := FBufferAhead and (FBufferReadSize <> 0);
+  if Result then
     FBufferReadSize := ReadBlock(FBufferPtr, FBufferReadSize, FBufferOffset);
 end;
 
@@ -559,6 +570,7 @@ begin
     FBufferModified := true;
     // update cached size
     UpdateCachedSize(FBufferOffset+RecEnd);
+    ResyncSharedFlushBuffer;
   end else begin
     // no buffering
     SingleWriteRecord(IntRecNum, Buffer);
@@ -865,6 +877,20 @@ end;
 procedure TPagedFile.ResetError;
 begin
   FWriteError := false;
+end;
+
+function TPagedFile.ResyncSharedReadBuffer: Boolean;
+begin
+  Result := IsSharedAccess and (not FFileLocked);
+  if Result then
+    Result := ReadBuffer;
+end;
+
+function TPagedFile.ResyncSharedFlushBuffer: Boolean;
+begin
+  Result := IsSharedAccess;
+  if Result then
+    FlushBuffer;
 end;
 
 // BDE compatible lock offset found!

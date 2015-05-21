@@ -195,6 +195,7 @@ type
     FOnIndexMissing: TDbfIndexMissingEvent;
     FOnCompareRecord: TNotifyEvent;
     FOnCopyDateTimeAsString: TConvertFieldEvent;
+    FScrolling: Boolean;
 
     FKeyBufferLen: Integer;
     FKeyBuffer: Pointer;
@@ -238,6 +239,7 @@ type
     function  SearchKeyBuffer(Buffer: PAnsiChar; SearchType: TSearchKeyType): Boolean;
     procedure SetRangeBuffer(LowRange: PAnsiChar; HighRange: PAnsiChar);
     procedure UpdateLock;
+    function  ResyncSharedReadCurrentRecord: Boolean;
 
   protected
     { abstract methods }
@@ -266,6 +268,7 @@ type
 {$endif}
 {$endif}
     procedure InternalPost; override; {virtual abstract}
+    procedure InternalRefresh; override;
     procedure InternalSetToRecord(Buffer: TDbfRecordBuffer); override; {virtual abstract}
     procedure InitFieldDefs; override;
     function  IsCursorOpen: Boolean; override; {virtual abstract}
@@ -286,6 +289,8 @@ type
     procedure DefChanged(Sender: TObject); override;
 {$endif}
     function  FindRecord(Restart, GoForward: Boolean): Boolean; override;
+    procedure DoBeforeScroll; override;
+    procedure DoAfterScroll; override;
 
     function  GetIndexFieldNames: string; {virtual;}
     procedure SetIndexFieldNames(const Value: string); {virtual;}
@@ -342,9 +347,7 @@ type
     function CompareBookmarks(Bookmark1, Bookmark2: TBookmark): Integer; override;
     procedure CheckDbfFieldDefs(ADbfFieldDefs: TDbfFieldDefs);
 
-{$ifdef VER1_0}
     procedure DataEvent(Event: TDataEvent; Info: Longint); override;
-{$endif}
 
     // my own methods and properties
     // most look like ttable functions but they are not tdataset related
@@ -1434,7 +1437,7 @@ begin
     if Assigned(FBlobStreams^[I]) then
       FBlobStreams^[I].Cancel;
   // try to lock this record
-  FDbfFile.LockRecord(FEditingRecNo, @pDbfRecord(ActiveBuffer)^.DeletedFlag);
+  FDbfFile.LockRecord(FEditingRecNo, @pDbfRecord(ActiveBuffer)^.DeletedFlag, BufferCount = 1);
   // succeeded!
 end;
 
@@ -1479,6 +1482,13 @@ begin
   end;
   // set flag that TDataSet is about to post...so we can disable resync
   FPosting := true;
+end;
+
+procedure TDbf.InternalRefresh;
+begin
+  if Assigned(FDbfFile) then
+    FDbfFile.ResyncSharedReadBuffer;
+  inherited;
 end;
 
 procedure TDbf.Resync(Mode: TResyncMode);
@@ -1815,6 +1825,20 @@ begin
       DoAfterScroll;
     end;
   end;
+end;
+
+procedure TDbf.DoBeforeScroll;
+begin
+  FScrolling := True;
+  inherited DoBeforeScroll;
+end;
+
+procedure TDbf.DoAfterScroll;
+begin
+  inherited DoAfterScroll;
+  if FScrolling and (BufferCount = 1) and (State = dsBrowse) then
+    ResyncSharedReadCurrentRecord;
+  FScrolling := False;
 end;
 
 {$ifdef SUPPORT_VARIANTS}
@@ -2820,6 +2844,22 @@ begin
   end;
 end;
 
+function TDbf.ResyncSharedReadCurrentRecord: Boolean;
+var
+  Buffer: PChar;
+begin
+  Result := FDbfFile.ResyncSharedReadBuffer;
+  if Result then
+  begin
+    Buffer := GetCurrentBuffer;
+    Result := Assigned(Buffer);
+  end;
+  if Result then
+    Result := FDbfFile.ReadRecord(PhysicalRecNo, Buffer) <> 0;
+  if Result then
+    DataEvent(deRecordChange, 0);
+end;
+
 {$ifdef SUPPORT_VARIANTS}
 
 procedure TDbf.SetRange(LowRange: Variant; HighRange: Variant; KeyIsANSI: boolean);
@@ -2966,16 +3006,12 @@ begin
   FieldDefs.Update;
 end;
 
-// A hack to upgrade method visibility, only necessary for FPC 1.0.x
-
-{$ifdef VER1_0}
-
 procedure TDbf.DataEvent(Event: TDataEvent; Info: Longint);
 begin
+  if ((Event = deDataSetChange) or (Event = deLayoutChange)) and Assigned(FDbfFile) and (not ControlsDisabled) then
+    FDbfFile.ResyncSharedFlushBuffer;
   inherited;
 end;
-
-{$endif}
 
 { Master / Detail }
 
