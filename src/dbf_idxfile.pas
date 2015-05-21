@@ -3155,9 +3155,9 @@ function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}
 begin
   Result := true;
   // ignore deleted records
-  if (FModifyMode = mmNormal) and (FUniqueMode = iuDistinct) and
-     ({$IFDEF SUPPORT_TRECORDBUFFER}Buffer[0] = Ord('*'){$ELSE}Buffer^ = '*'{$ENDIF}) then
-    exit;
+//if (FModifyMode = mmNormal) and (FUniqueMode = iuDistinct) and
+//   ({$IFDEF SUPPORT_TRECORDBUFFER}Buffer[0] = Ord('*'){$ELSE}Buffer^ = '*'{$ENDIF}) then
+//  exit;
   // check proper index and modifiability
   if FCanEdit and (PIndexHdr(FIndexHeader)^.KeyLen <> 0) then
   begin
@@ -3602,17 +3602,17 @@ end;
 procedure TIndexFile.RecordDeleted(RecNo: Integer; Buffer: TdbfRecordBuffer);
 begin
   // are we distinct -> then delete record from index
-  FModifyMode := mmDeleteRecall;
-  Delete(RecNo, Buffer);
-  FModifyMode := mmNormal;
+//FModifyMode := mmDeleteRecall;
+//Delete(RecNo, Buffer);
+//FModifyMode := mmNormal;
 end;
 
 function TIndexFile.RecordRecalled(RecNo: Integer; Buffer: TdbfRecordBuffer): Boolean;
 begin
   // are we distinct -> then reinsert record in index
-  FModifyMode := mmDeleteRecall;
-  Result := Insert(RecNo, Buffer, FUniqueMode);
-  FModifyMode := mmNormal;
+//FModifyMode := mmDeleteRecall;
+//Result := Insert(RecNo, Buffer, FUniqueMode);
+//FModifyMode := mmNormal;
 end;
 
 procedure TIndexFile.SetPhysicalRecNo(RecNo: Integer);

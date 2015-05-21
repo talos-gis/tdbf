@@ -115,6 +115,7 @@ following changes thx paulenandrew:
 - re-read current record if table is shared, under limited conditions so that performance is not affected (similar to BDE)
 - add OnProgress event to report the progress of long-running functions and allow cancellation, used when copying and restructuring (similar to BDE)
 - add missing message translations (fr, ita, nl, pl, ru)
+- include deleted records in distinct index (compatible with BDE)
 
 ------------------------
 V6.9.1
