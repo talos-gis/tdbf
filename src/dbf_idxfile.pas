@@ -3048,7 +3048,7 @@ end;
 
 procedure TIndexFile.MergeSortCheckCancel;
 begin
-  DoProgress(FProgressPosition, FProgressMax, '');
+  DoProgress(FProgressPosition, FProgressMax, STRING_PROGRESS_SORTING_RECORDS);
 end;
 
 function TIndexFile.MergeSortCompare(Item1, Item2: Pointer): Integer;
