@@ -902,7 +902,6 @@ var
   pRecord: pDbfRecord;
   acceptable: Boolean;
   SaveState: TDataSetState;
-  lPhysicalRecNo: Integer;
 //  s: string;
   lSequentialRecNo: TSequentialRecNo;
 begin
@@ -940,14 +939,9 @@ begin
 
     if (Result = grOK) then
     begin
-      lPhysicalRecNo := FCursor.PhysicalRecNo;
-      if (lPhysicalRecNo = 0) or not FDbfFile.IsRecordPresent(lPhysicalRecNo) then
-      begin
-        Result := grError;
-      end else begin
-        FDbfFile.ReadRecord(lPhysicalRecNo, @pRecord^.DeletedFlag);
-        acceptable := (FShowDeleted or (pRecord^.DeletedFlag <> '*'))
-      end;
+      Result := ReadCurrentRecord(Buffer, acceptable);
+      if lSequentialRecNo = 0 then
+        lSequentialRecNo := FCursor.SequentialRecNo;
     end;
 
     if (Result = grOK) and acceptable then
@@ -955,9 +949,7 @@ begin
       pRecord^.BookmarkData.PhysicalRecNo := FCursor.PhysicalRecNo;
       pRecord^.BookmarkFlag := bfCurrent;
       pRecord^.SequentialRecNo := FCursor.SequentialRecNo;
-      if lSequentialRecNo = 0 then
-        lSequentialRecNo := FCursor.SequentialRecNo;
-      GetCalcFields(TDbfRecBuf(Buffer));
+      GetCalcFields(Buffer);
 
       if Filtered or FFindRecordFilter then
       begin

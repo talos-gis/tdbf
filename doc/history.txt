@@ -122,6 +122,7 @@ following changes thx paulenandrew:
 - add more robust Numeric (N) and Float (F) field value translation - prevents potential access violation, supports exponential notation for integers (also compatible with BDE)
 - add more robust error handling for invalid index header, page or entry
 - add TDbf.BatchMove method (similar to BDE batch move)
+- if there is no active record, preventing it from reading the table twice (forwards then backwards)
 
 ------------------------
 V6.9.1
