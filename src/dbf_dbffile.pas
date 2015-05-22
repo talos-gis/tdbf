@@ -218,7 +218,6 @@ uses
   dbf_str, dbf_lang, dbf_prssupp, dbf_prsdef;
 
 const
-  sDBF_DEC_SEP = '.';
   SEOFTerminator = $1A;
 
 {$I dbf_struct.inc}
