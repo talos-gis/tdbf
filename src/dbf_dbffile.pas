@@ -1171,8 +1171,6 @@ var
   pBuff, pDestBuff: TDbfRecordBuffer;
   RestructFieldInfo: PRestructFieldInfo;
   BlobStream: TMemoryStream;
-  lIndexFile: TIndexFile;
-  lUniqueMode: TIndexUniqueType;
   last: Integer;
 begin
   // nothing to do?
@@ -2216,7 +2214,8 @@ begin
           end;
           // if mdx file just created, write changes to dbf header
           // set MDX flag to true
-          if CreateMdxFile then begin
+          if lIndexFile = FMdxFile then
+          begin
             PDbfHdr(Header)^.MDXFlag := 1;
             WriteHeader;
           end;
@@ -2250,8 +2249,8 @@ var
 {$ifdef USE_CACHE}
   cur, last: Integer;
   prevCache: Integer;
-{$endif}
   lUniqueMode: TIndexUniqueType;
+{$endif}
 begin
   // save current mode in case we change it
   prevMode := lIndexFile.UpdateMode;
