@@ -16,7 +16,6 @@ type
   EPagedFile = class(Exception)
   end;
 
-  TDbfProgressEvent = procedure(Sender: TObject; Position, Max: Integer; var Aborted: Boolean; Msg: string) of object;
   TPagedFileMode = (pfNone, pfMemoryCreate, pfMemoryOpen, pfExclusiveCreate,
     pfExclusiveOpen, pfReadWriteCreate, pfReadWriteOpen, pfReadOnly);
 
@@ -39,6 +38,7 @@ type
   {$else}
     TPagedFileOffset = Integer;
   {$endif}
+  TPagedFileProgressEvent = procedure(Sender: TObject; Position, Max: Integer; var Aborted: Boolean; Msg: string) of object;
 
   TPagedFileStream = class(TFileStream)
   protected
@@ -90,7 +90,7 @@ type
     FBufferMaxSize: Integer;
     FBufferModified: Boolean;
     FWriteError: Boolean;
-    FOnProgress: TDbfProgressEvent;
+    FOnProgress: TPagedFileProgressEvent;
   protected
     procedure SetHeaderOffset(NewValue: Integer); virtual;
     procedure SetRecordSize(NewValue: Integer); virtual;
@@ -171,7 +171,7 @@ type
     property Stream: TStream read FStream write SetStream;
     property BufferAhead: Boolean read FBufferAhead write SetBufferAhead;
     property WriteError: Boolean read FWriteError;
-    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
+    property OnProgress: TPagedFileProgressEvent read FOnProgress write FOnProgress;
   end;
 
 implementation

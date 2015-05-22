@@ -195,7 +195,7 @@ type
     FOnIndexMissing: TDbfIndexMissingEvent;
     FOnCompareRecord: TNotifyEvent;
     FOnCopyDateTimeAsString: TConvertFieldEvent;
-    FOnProgress: TDbfProgressEvent;
+    FOnProgress: TPagedFileProgressEvent;
     FScrolling: Boolean;
 
     FKeyBufferLen: Integer;
@@ -465,7 +465,7 @@ type
     property OnIndexMissing: TDbfIndexMissingEvent read FOnIndexMissing write FOnIndexMissing;
     property OnCopyDateTimeAsString: TConvertFieldEvent read FOnCopyDateTimeAsString write FOnCopyDateTimeAsString;
     property OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
-    property OnProgress: TDbfProgressEvent read FOnProgress write FOnProgress;
+    property OnProgress: TPagedFileProgressEvent read FOnProgress write FOnProgress;
 
     // redeclared data set properties
     property Active;
