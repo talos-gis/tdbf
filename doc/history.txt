@@ -123,6 +123,7 @@ following changes thx paulenandrew:
 - add TDbf.BatchMove method (similar to BDE batch move)
 - if there is no active record, preventing it from reading the table twice (forwards then backwards)
 - do not use OnIndexMissing with a FoxPro table
+- do not convert index expression to upper case
 
 ------------------------
 V6.9.1
