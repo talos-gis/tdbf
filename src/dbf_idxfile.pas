@@ -234,6 +234,7 @@ type
 {$endif}
   protected
     FIndexName: string;
+    FInsertError: string;
     FLastError: string;
     FParsers: array[0..MaxIndexes-1] of TDbfIndexParser;
     FIndexHeaders: array[0..MaxIndexes-1] of Pointer;
@@ -342,6 +343,7 @@ type
     function VersionPosition: TPagedFileOffset;
     function ReadVersion(PVersion: PByte): Boolean;
     procedure WriteVersion(PVersion: PByte);
+    procedure ConstructInvalidErrorMsg;
     procedure InvalidError;
   public
     constructor Create(ADbfFile: Pointer);
@@ -356,6 +358,8 @@ type
     procedure AddNewLevel;
 //  procedure UnlockHeader;
     procedure InsertError;
+    procedure CheckLastError;
+    procedure ResetError; override;
     function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
     function  Update(RecNo: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     procedure Delete(RecNo: Integer; Buffer: TDbfRecordBuffer);
@@ -925,7 +929,7 @@ begin
     FEntry := GetEntry(current);
     // calc diff
     Result := MatchKey;
-    if (Result = 0) and (ARecNo = -3) then
+    if (Result = 0) and (ARecNo = -3) and (LowerPage = nil) then
       Result := FIndexFile.FUserRecNo - GetRecNo;
     // test if we need to go lower or higher
     // result < 0 implies key smaller than tested entry
@@ -1331,7 +1335,7 @@ begin
         // don't recursively resync all lower pages
       end else if FLowerPage <> nil then
       begin
-        FIndexFile.InvalidError;
+        FIndexFile.ConstructInvalidErrorMsg;
       end else begin
         // we don't have to check autoresync here because we're already at lowest level
         EntryNo := FLowIndex;
@@ -1365,7 +1369,11 @@ begin
       FEntry := GetEntry(value);
       // sync lowerpage with entry
       if (FLowerPage <> nil) then
+      begin
+        if GetLowerPageNo = 0 then
+          FIndexFile.ConstructInvalidErrorMsg;
         SyncLowerPage;
+      end;
     end;
   end;
 end;
@@ -1462,33 +1470,34 @@ begin
 //  if LowerPage = nil then
 //    Result := 0
 //  else
+//    Result := SwapIntLE(PMdxEntry(Entry)^.RecBlockNo);
   Result := Integer(SwapIntLE(DWORD(PMdxEntry(Entry)^.RecBlockNo)));
-  if Result = 0 then
-    FIndexFile.InvalidError;
 end;
 
-function TMdxPage.GetKeyData: PAnsiChar;
+function TMdxPage.GetKeyData: PChar;
 begin
   Result := @PMdxEntry(Entry)^.KeyData;
 end;
 
 function TMdxPage.GetNumEntries: Integer;
 begin
+//Result := SwapWordLE(PMdxPage(PageBuffer)^.NumEntries);
   Result:= Integer(SwapIntLE(DWORD(PMdxPage(PageBuffer)^.NumEntries)));
   if (Result < 0) or (Result > SwapWordLE(PIndexHdr(FIndexFile.FIndexHeader)^.NumKeys)) then
   begin
     Result:= 0;
-    FIndexFile.InvalidError;
+    FIndexFile.ConstructInvalidErrorMsg;
   end;
 end;
 
-function TMdxPage.GetKeyDataFromEntry(AEntry: Integer): PAnsiChar;
+function TMdxPage.GetKeyDataFromEntry(AEntry: Integer): PChar;
 begin
   Result := @PMdxEntry(GetEntry(AEntry))^.KeyData;
 end;
 
 function TMdxPage.GetRecNo: Integer;
 begin
+//Result := SwapIntLE(PMdxEntry(Entry)^.RecBlockNo);
   Result := Integer(SwapIntLE(DWORD(PMdxEntry(Entry)^.RecBlockNo)));
 end;
 
@@ -1773,7 +1782,6 @@ begin
     GetMem(TempBuffer, TDbfFile(DbfFile).RecordSize);
     try
       TDbfFile(DbfFile).InitRecord(TempBuffer);
-      TDbfFile(DbfFile).InitRecordForIndex(TempBuffer);
       FResultLen := dbfStrLen(ExtractFromBuffer(TempBuffer));
     finally
       FreeMem(TempBuffer);
@@ -1847,6 +1855,8 @@ var
   localeError: TLocaleError;
   localeSolution: TLocaleSolution;
   DbfLangId: Byte;
+  TagSize: Byte;
+  AHeaderSize: Integer;
 begin
   if not FOpened then
   begin
@@ -1876,7 +1886,7 @@ begin
       FPageHeaderSize := 8;
       FEntryBof := @Entry_Mdx_BOF;
       FEntryEof := @Entry_Mdx_EOF;
-      HeaderSize := 512 + (Succ(MaxIndexes) * SizeOf(rMdx7Tag));
+      HeaderSize := 2048;
       RecordSize := 1024;
       PageSize := 512;
       if FileCreated then
@@ -1884,19 +1894,28 @@ begin
         FIndexVersion := TDbfFile(FDbfFile).DbfVersion;
         if FIndexVersion = xBaseIII then
           FIndexVersion := xBaseIV;
+        if FIndexVersion = xBaseVII then
+          TagSize := SizeOf(rMdx7Tag)
+        else
+          TagSize := 32;
       end else begin
         case PMdxHdr(Header)^.MdxVersion of
           3: FIndexVersion := xBaseVII;
         else
           FIndexVersion := xBaseIV;
         end;
+        RecordSize := PMdxHdr(Header)^.BlockAdder;
+        if (PMdxHdr(Header)^.BlockSize = 0) or (PMdxHdr(Header)^.BlockAdder = 0) then
+          InvalidError;
+        PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
+        if SwapWordLE(PMdxHdr(Header)^.TagsUsed) > MaxIndexes then
+          InvalidError;
+        TagSize:= PMdxHdr(Header)^.TagSize;
       end;
-      RecordSize := PMdxHdr(Header)^.BlockAdder;
-      if (PMdxHdr(Header)^.BlockSize = 0) or (PMdxHdr(Header)^.BlockAdder = 0) then
-        InvalidError;
-      PageSize := PMdxHdr(Header)^.BlockAdder div PMdxHdr(Header)^.BlockSize;
-      if SwapWordLE(PMdxHdr(Header)^.TagsUsed) > MaxIndexes then
-        InvalidError;
+      AHeaderSize := 512 + (Succ(MaxIndexes) * TagSize);
+      if (AHeaderSize mod RecordSize)<>0 then
+        Inc(AHeaderSize, RecordSize - (AHeaderSize mod RecordSize));
+      HeaderSize := AHeaderSize;
       case FIndexVersion of
         xBaseVII:
           begin
@@ -1907,6 +1926,7 @@ begin
         FMdxTag := TMdx4Tag.Create;
         FTempMdxTag := TMdx4Tag.Create;
       end;
+
       // get mem for all index headers..we're going to cache these
       for I := 0 to MaxIndexes - 1 do
       begin
@@ -2026,13 +2046,14 @@ begin
       FreeMemAndNil(FIndexHeaders[I]);
     FreeAndNil(FParsers[I]);
     FreeAndNil(FRoots[I]);
+    FRoot := nil;
   end;
 
   // free mem
   FMdxTag.Free;
   FMdxTag := nil;
   FTempMdxTag.Free;
-  fTempMdxTag := nil;
+  FTempMdxTag := nil;
 
   // close physical file
   CloseFile;
@@ -2104,8 +2125,11 @@ begin
     PMdxHdr(Header)^.Month := month;
     PMdxHdr(Header)^.Day := day;
     WriteDBFileName(PMdxHdr(Header), FileName);
-    PMdxHdr(Header)^.BlockSize := SwapWordLE(2);
-    PMdxHdr(Header)^.BlockAdder := SwapWordLE(1024);
+    if FileCreated then
+    begin
+      PMdxHdr(Header)^.BlockSize := SwapWordLE(2);
+      PMdxHdr(Header)^.BlockAdder := SwapWordLE(1024);
+    end;
     PMdxHdr(Header)^.ProdFlag := 1;
     PMdxHdr(Header)^.NumTags := 48;
     if FIndexVersion = xBaseVII then
@@ -2215,6 +2239,8 @@ begin
   else
     lKeyLen:= FCurrentParser.ResultLen;
   end;
+  if lKeyLen > MaxIndexKeyLen then
+    raise EDbfError.CreateFmt(STRING_INDEX_EXPRESSION_TOO_LONG, [FCurrentParser.Expression, lKeyLen]);
   PIndexHdr(FIndexHeader)^.KeyLen := SwapWordLE(lKeyLen);
 end;
 
@@ -2228,7 +2254,7 @@ begin
     SwapWordLE(PIndexHdr(FIndexHeader)^.KeyRecLen));
 end;
 
-procedure TIndexFile.CalcRegenerateIndex; // 07/06/2011 pb  CR 19188
+procedure TIndexFile.CalcRegenerateIndex;
 begin
   CalcKeyLen;
   CalcKeyProperties;
@@ -3440,10 +3466,10 @@ procedure TIndexFile.ConstructInsertErrorMsg;
 var
   InfoKey: string;
 begin
-  if Length(FLastError) > 0 then exit;
-  InfoKey := string(FUserKey);
+  if Length(FInsertError) > 0 then exit;
   SetLength(InfoKey, KeyLen);
-  FLastError := Format(STRING_KEY_VIOLATION, [GetName,
+  CopyCurrentKey(FUserKey, PChar(InfoKey));
+  FInsertError := Format(STRING_KEY_VIOLATION, [GetName,
     PhysicalRecNo, TrimRight(InfoKey)]);
 end;
 
@@ -3451,9 +3477,30 @@ procedure TIndexFile.InsertError;
 var
   errorStr: string;
 begin
+  errorStr := FInsertError;
+  if errorstr <> '' then
+  begin
+    FInsertError := '';
+    raise EDbfIndexError.Create(errorStr);
+  end;
+end;
+
+procedure TIndexFile.CheckLastError;
+var
+  errorStr: string;
+begin
   errorStr := FLastError;
+  if errorstr <> '' then
+  begin
+    FLastError := '';
+    raise EDbfIndexError.Create(errorStr);
+  end;
+end;
+
+procedure TIndexFile.ResetError;
+begin
+  inherited ResetError;
   FLastError := '';
-  raise EDbfError.Create(errorStr);
 end;
 
 procedure TIndexFile.Delete(RecNo: Integer; Buffer: TdbfRecordBuffer);
@@ -3517,7 +3564,7 @@ begin
     if Result then
       FLeaf.Delete
     else
-      InvalidError;
+      ConstructInvalidErrorMsg;
   end;
 end;
 
@@ -3668,7 +3715,7 @@ begin
   FRoot.PageNo := SwapIntLE(PIndexHdr(FIndexHeader)^.RootPage);
 end;
 
-function TIndexFile.SearchKey(Key: PAnsiChar; SearchType: TSearchKeyType): Boolean;
+function TIndexFile.SearchKey(Key: PChar; SearchType: TSearchKeyType): Boolean;
 var
   findres: Integer;
   currRecNo: TSequentialRecNo;
@@ -3701,7 +3748,11 @@ begin
   end;
   // search failed -> restore previous position
   if not Result then
+  begin
     SequentialRecNo := currRecNo;
+    if SearchType <> stEqual then
+      FRoot.RecurLast;
+  end;
 end;
 
 function TIndexFile.Find(RecNo: Integer; Buffer: PAnsiChar): Integer;
@@ -3777,6 +3828,8 @@ begin
       // need to traverse lower down
       done := 2;
     end;
+    if AInsert then
+      CheckLastError;
 
     // check if we need to split page
     // done = 1 -> not found entry on insert path yet
@@ -3836,6 +3889,7 @@ begin
 //FModifyMode := mmDeleteRecall;
 //Result := Insert(RecNo, Buffer, FUniqueMode);
 //FModifyMode := mmNormal;
+  Result := True;
 end;
 
 procedure TIndexFile.SetPhysicalRecNo(RecNo: Integer);
@@ -3854,6 +3908,8 @@ begin
     // find this key
     FUserRecNo := RecNo;
     FindKey(false);
+    if (FUniqueMode = iuNormal) and (FLeaf.PhysicalRecNo <> RecNo) then
+      ConstructInvalidErrorMsg;
   end;
 end;
 
@@ -4016,7 +4072,7 @@ begin
   // return false if we are at first entry
   Result := FLeaf.RecurPrev;
   if Result and ((FLeaf.PhysicalRecNo = curRecNo) or (not TDbfFile(FDbfFile).IsRecordPresent(FLeaf.PhysicalRecNo))) then
-    raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+    ConstructInvalidErrorMsg;
 end;
 
 function TIndexFile.WalkNext: boolean;
@@ -4028,7 +4084,7 @@ begin
   // return false if we are at last entry
   Result := FLeaf.RecurNext;
   if Result and ((FLeaf.PhysicalRecNo = curRecNo) or (not TDbfFile(FDbfFile).IsRecordPresent(FLeaf.PhysicalRecNo))) then
-    raise EDbfError.Create(STRING_INVALID_MDX_FILE);
+    ConstructInvalidErrorMsg;
 end;
 
 function TIndexFile.Prev: Boolean;
@@ -4389,6 +4445,12 @@ begin
   WriteBlock(PVersion, SizeOf(PVersion^), VersionPosition);
 end;
 
+procedure TIndexFile.ConstructInvalidErrorMsg;
+begin
+  if FLastError = '' then
+    FLastError := STRING_INVALID_MDX_FILE;
+end;
+
 procedure TIndexFile.InvalidError;
 begin
   FForceClose := True;
@@ -4434,27 +4496,30 @@ begin
   begin
     // get pointer to index header
     FIndexHeader := FIndexHeaders[AIndex];
-    // load root + leaf
-    FCurrentParser := FParsers[AIndex];
-    FRoot := FRoots[AIndex];
-    FLeaf := FLeaves[AIndex];
-    // if xBaseIV then we need to store where pageno of current header
-    if FIndexVersion >= xBaseIV then
+    if Assigned(FIndexHeader) then
     begin
-      if AIndex < SwapWordLE(PMdxHdr(Header)^.TagsUsed) then
+      // load root + leaf
+      FCurrentParser := FParsers[AIndex];
+      FRoot := FRoots[AIndex];
+      FLeaf := FLeaves[AIndex];
+      // if xBaseIV then we need to store where pageno of current header
+      if FIndexVersion >= xBaseIV then
       begin
-        FMdxTag.Tag := CalcTagOffset(AIndex);
-        FIndexName := FMdxTag.TagName;
-        FHeaderPageNo := FMdxTag.HeaderPageNo;
+        if AIndex < SwapWordLE(PMdxHdr(Header)^.TagsUsed) then
+        begin
+          FMdxTag.Tag := CalcTagOffset(AIndex);
+          FIndexName := FMdxTag.TagName;
+          FHeaderPageNo := FMdxTag.HeaderPageNo;
+        end;
+        // does dBase actually use this flag?
+//        FIsExpression := FMdxTag.KeyFormat = KeyFormat_Expression;
+      end else begin
+        // how does dBase III store whether it is expression?
+//        FIsExpression := true;
       end;
-      // does dBase actually use this flag?
-//      FIsExpression := FMdxTag.KeyFormat = KeyFormat_Expression;
-    end else begin
-      // how does dBase III store whether it is expression?
-//      FIsExpression := true;
+      // retrieve properties
+      UpdateIndexProperties;
     end;
-    // retrieve properties
-    UpdateIndexProperties;
   end else begin
     // not a valid index
     FIndexName := EmptyStr;
