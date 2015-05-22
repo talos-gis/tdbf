@@ -839,7 +839,6 @@ begin
       Dst := @PDbfRecord(GetKeyBuffer)^.DeletedFlag
     else
       Dst := @PDbfRecord(ActiveBuffer)^.DeletedFlag;
-    Dst := @PDbfRecord(ActiveBuffer)^.DeletedFlag;
     FDbfFile.SetFieldData(Field.FieldNo - 1, Field.DataType, Buffer, Dst, NativeFormat);
   end else begin    { ***** fkCalculated, fkLookup ***** }
     Dst := @PDbfRecord(CalcBuffer)^.DeletedFlag;
@@ -2094,7 +2093,7 @@ function TDbf.Lookup(const KeyFields: string; const KeyValues: Variant;
   const ResultFields: string): Variant;
 var
 //  OldState:  TDataSetState;
-  saveRecNo: integer;
+  saveRecNo: TSequentialRecNo;
   saveState: TDataSetState;
 begin
   Result := Null;
