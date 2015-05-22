@@ -555,7 +555,9 @@ type
     sKeyType       : Word;     // 16..17 00h: DB4: C/N; DB3: C
                                //        01h: DB4: D  ; DB3: N/D
     KeyRecLen      : Word;     // 18..19 Length of key entry in page
-    Version        : Word;     // 20..21
+//  Version        : Word;     // 20..21
+    Version        : Byte;     // 20
+    Dummy1         : Byte;     // 21
     Dummy2         : Byte;     // 22
     Unique         : Byte;     // 23
     KeyDesc        : array [0..219] of AnsiChar; // 24..243
@@ -2368,7 +2370,7 @@ begin
   end;
 
 //PIndexHdr(FIndexHeader)^.Version := SwapWordLE(2);     // this is what DB4 writes into file
-  PIndexHdr(FIndexHeader)^.Version := SwapWordLE(4); // this is what the BDE uses for the first version
+  PIndexHdr(FIndexHeader)^.Version := 4; // this is what the BDE uses for the first version (SwapWordLE not needed, Version declared as Byte)
   PIndexHdr(FIndexHeader)^.Dummy2 := 0;
   PIndexHdr(FIndexHeader)^.Dummy3 := 0;
   PIndexHdr(FIndexHeader)^.ForExist := 0;    // false
