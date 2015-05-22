@@ -401,8 +401,8 @@ begin
         // set header blob flag corresponding to field list
         if FDbfVersion <> xFoxPro then
         begin
-          Version := PDbfHdr(Header)^.VerDBF or $80;
-          if Version <> PDbfHdr(Header)^.VerDBF then begin
+          version := PDbfHdr(Header)^.VerDBF or $80;
+          if version <> PDbfHdr(Header)^.VerDBF then begin
             PDbfHdr(Header)^.VerDBF := Version;
             lModified := true;
           end;
@@ -410,8 +410,8 @@ begin
       end else
         if FDbfVersion <> xFoxPro then
         begin
-          Version := PDbfHdr(Header)^.VerDBF and $7F;
-          if Version <> PDbfHdr(Header)^.VerDBF then begin
+          version := PDbfHdr(Header)^.VerDBF and $7F;
+          if version <> PDbfHdr(Header)^.VerDBF then begin
             PDbfHdr(Header)^.VerDBF := Version;
             lModified := true;
           end;
@@ -467,17 +467,20 @@ begin
             FreeAndNil(FMdxFile);
           end;
         end else begin
-          // ask user
-          deleteLink := true;
-          if Assigned(FOnIndexMissing) then
-            FOnIndexMissing(deleteLink);
-          // correct flag
-          if deleteLink then
+          if FDbfVersion <> xFoxPro then
           begin
-            PDbfHdr(Header)^.MDXFlag := 0;
-            lModified := true;
-          end else
-            FForceClose := true;
+            // ask user
+            deleteLink := true;
+            if Assigned(FOnIndexMissing) then
+              FOnIndexMissing(deleteLink);
+            // correct flag
+            if deleteLink then
+            begin
+              PDbfHdr(Header)^.MDXFlag := 0;
+              lModified := true;
+            end else
+              FForceClose := true;
+          end;
         end;
       end;
     end;
