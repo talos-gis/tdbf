@@ -140,7 +140,7 @@ type
     procedure WriteHeader; virtual;
     function  FileCreated: Boolean;
     function  IsSharedAccess: Boolean;
-    procedure ResetError; virtual;
+    procedure ResetError;
     function  ResyncSharedReadBuffer: Boolean;
     function  ResyncSharedFlushBuffer: Boolean;
     procedure DoProgress(Position, Max: Integer; Msg: string);
