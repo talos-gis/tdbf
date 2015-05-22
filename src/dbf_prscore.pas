@@ -175,6 +175,7 @@ procedure FuncDiv_F_LL(Param: PExpressionRec);
 procedure FuncDiv_F_LF(Param: PExpressionRec);
 procedure FuncDiv_F_LI(Param: PExpressionRec);
 {$endif}
+procedure FuncSoundex(Param: PExpressionRec);
 procedure FuncStrI_EQ(Param: PExpressionRec);
 procedure FuncStrI_NEQ(Param: PExpressionRec);
 procedure FuncStrI_LT(Param: PExpressionRec);
@@ -1678,6 +1679,20 @@ end;
 
 {$endif}
 
+{$I dbf_soundex.inc}
+procedure FuncSoundex(Param: PExpressionRec);
+var
+  src: pchar;
+  Dest: string;
+begin
+  with Param^ do
+  begin
+    Src := Args[0];
+    Dest := Soundex(src);
+    res.Append(pchar(Dest), Length(Dest));
+  end;
+end;
+
 procedure FuncStrI_EQ(Param: PExpressionRec);
 begin
   Param^.Res.MemoryPos^^ := AnsiChar(dbfStrIComp(Param^.Args[0], Param^.Args[1]) = 0); // Was Char
@@ -2234,7 +2249,10 @@ initialization
     Add(TFunction.Create('LEFT',      'LEFT',  'SI',  2, etString, FuncLeftString, ''));
     Add(TFunction.Create('UPPERCASE', 'UPPER', 'S',   1, etString, FuncUppercase, ''));
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString, FuncLowercase, ''));
-  end;
+
+    // More functions
+    Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString, FuncSoundex,    ''));
+end;
 
   with DbfWordsInsensGeneralList do
   begin
