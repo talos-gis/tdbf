@@ -571,6 +571,7 @@ begin
       // record outside buffer, need to synchronize first
       SynchronizeBuffer(IntRecNum);
       RecEnd := PagesPerRecord * PageSize;
+      FBufferSize := RecEnd;
     end;
     // we can write this record to buffer
     Move(Buffer^, PAnsiChar(FBufferPtr)[RecEnd-RecordSize], RecordSize);
