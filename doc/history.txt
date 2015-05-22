@@ -45,7 +45,7 @@ following changes thx paulenandrew:
 - fix compiler errors in dbf_dbffile for Free Pascal
 - expose TIndexFile.CompareKeys in TDbf.CompareKeys
 - change TDbf.ExtractKey to extract key from index instead of evaluate it from record buffer
-- prevent Access Violation in TDbf.IsDeleted if $booleval is on
+- prevent Access Violation in TDbf.IsDeleted and TDbf.Undelete if table is closed and $booleval is on
 - use fmShareExclusive in exclusive create/open mode
 - only lock a record if the table is shared
 - fix memo file not being maintained correctly if block size is not the default of 1024

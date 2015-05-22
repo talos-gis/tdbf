@@ -3043,7 +3043,10 @@ var
   src: PAnsiChar;
 begin
   src := PAnsiChar(GetCurrentBuffer);
-  IsDeleted := (src=nil) or (src^ = '*')
+  if Assigned(src) then
+    Result := (src^ = '*')
+  else
+    Result := False;
 end;
 
 procedure TDbf.Undelete;
@@ -3056,14 +3059,16 @@ begin
   // get active buffer
   src := GetCurrentBuffer;
   srcptr := PAnsiChar(src);
-  if (srcptr <> nil) and (srcptr^ = '*') then
+  if srcptr <> nil then
   begin
-    // notify indexes record is about to be recalled
-    FDbfFile.RecordRecalled(FCursor.PhysicalRecNo, src);
-    // recall record
-    srcptr := PAnsiChar(src);
-    srcptr^ := ' ';
-    FDbfFile.WriteRecord(FCursor.PhysicalRecNo, src);
+    if srcptr^ = '*' then
+    begin
+      // notify indexes record is about to be recalled
+      FDbfFile.RecordRecalled(FCursor.PhysicalRecNo, src);
+      // recall record
+      srcptr^ := ' ';
+      FDbfFile.WriteRecord(FCursor.PhysicalRecNo, src);
+    end;
   end;
 end;
 
