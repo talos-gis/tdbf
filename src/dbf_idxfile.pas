@@ -4713,7 +4713,7 @@ end;
 
 procedure TDbfIndexDef.SetExpression(NewField: string);
 begin
-  FExpression := IndexNameNormalize(NewField);
+  FExpression := Trim(NewField);
 end;
 
 initialization
