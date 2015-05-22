@@ -403,7 +403,7 @@ begin
         begin
           version := PDbfHdr(Header)^.VerDBF or $80;
           if version <> PDbfHdr(Header)^.VerDBF then begin
-            PDbfHdr(Header)^.VerDBF := Version;
+            PDbfHdr(Header)^.VerDBF := version;
             lModified := true;
           end;
         end;
@@ -412,7 +412,7 @@ begin
         begin
           version := PDbfHdr(Header)^.VerDBF and $7F;
           if version <> PDbfHdr(Header)^.VerDBF then begin
-            PDbfHdr(Header)^.VerDBF := Version;
+            PDbfHdr(Header)^.VerDBF := version;
             lModified := true;
           end;
         end;
