@@ -120,6 +120,7 @@ following changes thx paulenandrew:
 - fix record and table locking algorithm - when table is locked, can edit a record anyway and adding a record causes it to hang (also compatible with BDE)
 - add more robust Numeric (N) and Float (F) field value translation - prevents potential access violation, supports exponential notation for integers (also compatible with BDE)
 - add more robust error handling for invalid index header, page or entry
+- add TDbf.BatchMove method (similar to BDE batch move)
 
 ------------------------
 V6.9.1

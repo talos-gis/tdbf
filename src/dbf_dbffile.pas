@@ -68,6 +68,7 @@ type
     FOnLocaleError: TDbfLocaleErrorEvent;
     FOnIndexInvalid: TDbfIndexInvalidEvent;
     FOnIndexMissing: TDbfIndexMissingEvent;
+    FRecordCountDirty: Boolean;
 
     function  HasBlob: Boolean;
     function  GetMemoExt: string;
@@ -75,7 +76,8 @@ type
     function GetLanguageId: Integer;
     function GetLanguageStr: AnsiString;
 
-    procedure WriteEofTerminator;
+    procedure RecordCountFlush;
+    procedure WriteEOFTerminator;
   protected
     procedure ConstructFieldDefs;
     procedure InitDefaultBuffer;
@@ -91,6 +93,9 @@ type
     procedure Zap;
     procedure DeleteMdxFile;
     procedure UpdateLock;
+    procedure BatchStart;
+    procedure BatchUpdate;
+    procedure BatchFinish;
 
     procedure FinishCreate(AFieldDefs: TDbfFieldDefs; MemoSize: Integer);
     function GetIndexByName(AIndexName: string): TIndexFile;
@@ -124,6 +129,7 @@ type
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer);
     procedure DeleteIndexFile(AIndexFile: TIndexFile);
+    procedure Flush; override;
 
     property MemoFile: TMemoFile read FMemoFile;
     property FieldDefs: TDbfFieldDefs read FFieldDefs;
@@ -214,6 +220,7 @@ uses
 
 const
   sDBF_DEC_SEP = '.';
+  SEOFTerminator = $1A;
 
 {$I dbf_struct.inc}
 
@@ -262,6 +269,8 @@ var
   LangStr: PAnsiChar;
   version: byte;
   Handled: Boolean;
+  EOFTerminator: Byte;
+  lOffset: TPagedFileOffset;
 begin
   // check if not already opened
   if not Active then
@@ -477,7 +486,12 @@ begin
     // record changes
     if lModified and (Mode <> pfReadOnly) then
       WriteHeader;
-    
+
+    lOffset:= CalcPageOffset(Succ(RecordCount));
+    if Succ(lOffset)=FCachedSize then
+      if (ReadBlock(@EOFTerminator, SizeOf(EOFTerminator), lOffset)=SizeOf(EOFTerminator)) and (EOFTerminator=SEOFTerminator) then
+        Dec(FCachedSize);
+
     // open indexes
     for I := 0 to FIndexFiles.Count - 1 do
       TIndexFile(FIndexFiles.Items[I]).Open;
@@ -502,6 +516,7 @@ begin
     FreeAndNil(FMemoFile);
 
     // now we can close physical dbf file
+    RecordCountFlush;
     CloseFile;
 
     // free FMdxFile, remove it from the FIndexFiles and Names lists
@@ -653,6 +668,7 @@ begin
     end;
     // end of header
     WriteChar($0D);
+    Inc(FCachedSize);
 
     // write memo bit
     if lHasBlob then
@@ -748,6 +764,22 @@ begin
   DeleteIndexFile(MdxFile);
 end;
 
+procedure TDbfFile.BatchStart;
+begin
+  FInCopyFrom := True;
+end;
+
+procedure TDbfFile.BatchUpdate;
+begin
+  if not NeedLocks then
+    RecordCountFlush;
+end;
+
+procedure TDbfFile.BatchFinish;
+begin
+  FInCopyFrom := False;
+end;
+
 procedure TDbfFile.UpdateLock;
 begin
 {$ifdef USE_CACHE}
@@ -775,8 +807,8 @@ begin
   inherited WriteHeader;
 
   // write EOF terminator
-  if RecordCount = 0 then
-    WriteEofTerminator;
+//if RecordCount = 0 then
+//  WriteEOFTerminator;
 end;
 
 procedure TDbfFile.ConstructFieldDefs;
@@ -974,12 +1006,23 @@ begin
     Result := PAfterHdrVII(PAnsiChar(Header) + SizeOf(rDbfHdr))^.LanguageDriverName; // Was PChar
 end;
 
-procedure TDbfFile.WriteEofTerminator;
-var
-  EofTerminator: Byte;
+procedure TDbfFile.RecordCountFlush;
 begin
-  EofTerminator := $1A;
-  WriteBlock(@EofTerminator, SizeOf(EofTerminator), CalcPageOffset(RecordCount + 1));
+  if FRecordCountDirty then
+  begin
+    WriteEOFTerminator;
+    PDbfHdr(Header)^.RecordCount := RecordCount;
+    WriteHeader;
+    FRecordCountDirty := False;
+  end;
+end;
+
+procedure TDbfFile.WriteEOFTerminator;
+var
+  EOFTerminator: Byte;
+begin
+  EOFTerminator := SEOFTerminator;
+  WriteBlock(@EOFTerminator, SizeOf(EOFTerminator), CalcPageOffset(RecordCount + 1));
 end;
 
 {
@@ -1172,6 +1215,7 @@ begin
     DestDbfFile.FinishCreate(DestFieldDefs, FMemoFile.RecordSize)
   else
     DestDbfFile.FinishCreate(DestFieldDefs, 512);
+  DestDbfFile.UpdateLock;
 
   // adjust size and offsets of fields
   GetMem(RestructFieldInfo, sizeof(TRestructFieldInfo)*DestFieldDefs.Count);
@@ -1248,105 +1292,111 @@ begin
 
   // let the games begin!
   try
-{$ifdef USE_CACHE}
-    BufferAhead := true;
-    DestDbfFile.BufferAhead := true;
-{$endif}
-    lWRecNo := 1;
-    last := RecordCount;
-    if Pack then
-      DoProgress(0, last, STRING_PROGRESS_PACKINGRECORDS);
-    for lRecNo := 1 to last do
-    begin
-      // read record from original dbf
-      ReadRecord(lRecNo, pBuff);
-      // copy record?
-      if ({$IFDEF SUPPORT_TRECORDBUFFER}Char(pBuff[0]){$ELSE}pBuff^{$ENDIF} <> '*') or not Pack then
+    DestDbfFile.BatchStart;
+    try
+//{$ifdef USE_CACHE}
+//    BufferAhead := true;
+//    DestDbfFile.BufferAhead := true;
+//{$endif}
+      lWRecNo := 1;
+      last := RecordCount;
+      if Pack then
+        DoProgress(0, last, STRING_PROGRESS_PACKINGRECORDS);
+      for lRecNo := 1 to last do
       begin
-        // if restructure, initialize dest
-        if DbfFieldDefs <> nil then
+        // read record from original dbf
+        ReadRecord(lRecNo, pBuff);
+        // copy record?
+        if ({$IFDEF SUPPORT_TRECORDBUFFER}Char(pBuff[0]){$ELSE}pBuff^{$ENDIF} <> '*') or not Pack then
         begin
-          DestDbfFile.InitRecord(PAnsiChar(pDestBuff));
-          // copy deleted mark (the first byte)
-          pDestBuff^ := pBuff^;
-        end;
-
-        if (DbfFieldDefs <> nil) or (FMemoFile <> nil) then
-        begin
-          // copy fields
-          for lFieldNo := 0 to DestFieldDefs.Count-1 do
+          // if restructure, initialize dest
+          if DbfFieldDefs <> nil then
           begin
-            TempDstDef := DestFieldDefs.Items[lFieldNo];
-            // handle blob fields differently
-            // don't try to copy new blob fields!
-            // DbfFieldDefs = nil -> pack only
-            // TempDstDef.CopyFrom >= 0 -> copy existing (blob) field
-            if TempDstDef.IsBlob and ((DbfFieldDefs = nil) or (TempDstDef.CopyFrom >= 0)) then
+            DestDbfFile.InitRecord(pDestBuff);
+            // copy deleted mark (the first byte)
+            pDestBuff^ := pBuff^;
+          end;
+
+          if (DbfFieldDefs <> nil) or (FMemoFile <> nil) then
+          begin
+            // copy fields
+            for lFieldNo := 0 to DestFieldDefs.Count-1 do
             begin
-              // get current blob blockno
-              if GetFieldData(lFieldNo, ftInteger, pBuff, @lBlobPageNo, false) and (lBlobPageNo > 0) then
+              TempDstDef := DestFieldDefs.Items[lFieldNo];
+              // handle blob fields differently
+              // don't try to copy new blob fields!
+              // DbfFieldDefs = nil -> pack only
+              // TempDstDef.CopyFrom >= 0 -> copy existing (blob) field
+              if TempDstDef.IsBlob and ((DbfFieldDefs = nil) or (TempDstDef.CopyFrom >= 0)) then
               begin
-                BlobStream.Clear;
-                FMemoFile.ReadMemo(lBlobPageNo, BlobStream);
-                BlobStream.Position := 0;
-                // always append
-                DestDbfFile.FMemoFile.WriteMemo(lBlobPageNo, 0, BlobStream);
-                // write new blockno
-                DestDbfFile.SetFieldData(lFieldNo, ftInteger, @lBlobPageNo, pDestBuff, false);
+                // get current blob blockno
+                if GetFieldData(lFieldNo, ftInteger, pBuff, @lBlobPageNo, false) and (lBlobPageNo > 0) then
+                begin
+                  BlobStream.Clear;
+                  FMemoFile.ReadMemo(lBlobPageNo, BlobStream);
+                  BlobStream.Position := 0;
+                  // always append
+                  DestDbfFile.FMemoFile.WriteMemo(lBlobPageNo, 0, BlobStream);
+                  // write new blockno
+                  DestDbfFile.SetFieldData(lFieldNo, ftInteger, @lBlobPageNo, pDestBuff, false);
+                end;
+              end else if (DbfFieldDefs <> nil) and (TempDstDef.CopyFrom >= 0) then
+              begin
+                // copy content of field
+                with RestructFieldInfo[lFieldNo] do
+                  Move(pBuff[SourceOffset], pDestBuff[DestOffset], Size);
               end;
-            end else if (DbfFieldDefs <> nil) and (TempDstDef.CopyFrom >= 0) then
-            begin
-              // copy content of field
-              with RestructFieldInfo[lFieldNo] do
-                Move(pBuff[SourceOffset], pDestBuff[DestOffset], Size);
             end;
           end;
+
+          // write record
+          DestDbfFile.WriteRecord(lWRecNo, pDestBuff);
+          // update indexes
+//        for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
+//        begin
+//          lIndexFile := TIndexFile(DestDbfFile.IndexFiles.Items[I]);
+//          if lIndexFile.UniqueMode = iuUnique then
+//            lUniqueMode := iuDistinct
+//          else
+//            lUniqueMode := lIndexFile.UniqueMode;
+//          lIndexFile.Insert(lWRecNo, pDestBuff, lUniqueMode);
+//        end;
+
+          // go to next record
+          Inc(lWRecNo);
         end;
-
-        // write record
-        DestDbfFile.WriteRecord(lWRecNo, pDestBuff);
-        // update indexes
-//      for I := 0 to DestDbfFile.IndexFiles.Count - 1 do
-//      begin
-//        lIndexFile := TIndexFile(DestDbfFile.IndexFiles.Items[I]);
-//        if lIndexFile.UniqueMode = iuUnique then
-//          lUniqueMode := iuDistinct
-//        else
-//          lUniqueMode := lIndexFile.UniqueMode;
-//        lIndexFile.Insert(lWRecNo, pDestBuff, lUniqueMode);
-//      end;
-
-        // go to next record
-        Inc(lWRecNo);
-      end;
-      if Pack then
+        if Pack then
         DoProgress(lRecNo, last, STRING_PROGRESS_PACKINGRECORDS);
-    end;
+      end;
 
-{$ifdef USE_CACHE}
-    BufferAhead := false;
-    DestDbfFile.BufferAhead := false;
-{$endif}
+//{$ifdef USE_CACHE}
+//    BufferAhead := false;
+//    DestDbfFile.BufferAhead := false;
+//{$endif}
+      BufferAhead := false;
 
-    // save index filenames
-    for I := 0 to FIndexFiles.Count - 1 do
-      OldIndexFiles.Add(TIndexFile(IndexFiles[I]).FileName);
+      // save index filenames
+      for I := 0 to FIndexFiles.Count - 1 do
+        OldIndexFiles.Add(TIndexFile(IndexFiles[I]).FileName);
 
-    // close dbf
-    Close;
+      // close dbf
+      Close;
 
-    // if restructure -> rename the old dbf files
-    // if pack only -> delete the old dbf files
-    DestDbfFile.Rename(FileName, OldIndexFiles, DbfFieldDefs = nil);
+      // if restructure -> rename the old dbf files
+      // if pack only -> delete the old dbf files
+      DestDbfFile.Rename(FileName, OldIndexFiles, DbfFieldDefs = nil);
     
-    // we have to reinit fielddefs if restructured
-    Open;
+      // we have to reinit fielddefs if restructured
+      Open;
 
-    // crop deleted records
-    RecordCount := lWRecNo - 1;
-    // update date/time stamp, recordcount
-    PDbfHdr(Header)^.RecordCount := RecordCount;
-    WriteHeader;
+      // crop deleted records
+      RecordCount := lWRecNo - 1;
+      // update date/time stamp, recordcount
+      FRecordCountDirty := True;
+      BatchUpdate;
+    finally
+      DestDbfFile.BatchFinish;
+    end;
   finally
     // close temporary file
     FreeAndNil(DestDbfFile);
@@ -1410,6 +1460,8 @@ var
   date: TDateTime;
   timeStamp: TTimeStamp;
   asciiContents: boolean;
+  IntValue: Integer;
+  FloatValue: Extended;
 
   procedure CorrectYear(var wYear: Integer);
   var
@@ -2490,7 +2542,9 @@ begin
           // write header to disk
           WriteHeader;
           // done with header
-        end;
+        end
+        else
+          FRecordCountDirty := True;
 
         if WriteError then
         begin
@@ -2509,7 +2563,7 @@ begin
         // write buffer to disk
         WriteRecord(newRecord, Buffer);
         if NeedLocks then
-          WriteEofTerminator;
+          WriteEOFTerminator;
 
         // done updating, unlock
         //UnlockPage(newRecord);
@@ -2686,6 +2740,13 @@ begin
   if FMdxFile = AIndexFile then
     FMdxFile := nil;
   AIndexFile.Free;
+end;
+
+procedure TDbfFile.Flush;
+begin
+  FlushBuffer;
+  FlushHeader;
+  inherited;
 end;
 
 procedure TDbfFile.SetRecordSize(NewSize: Integer);

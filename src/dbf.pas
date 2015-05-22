@@ -48,6 +48,9 @@ type
   TDbfLanguageAction = (laReadOnly, laForceOEM, laForceANSI, laDefault);
   TDbfTranslationMode = (tmNoneAvailable, tmNoneNeeded, tmSimple, tmAdvanced);
   TDbfFileName = (dfDbf, dfMemo, dfIndex);
+  TDbfBatchMode = (bmAppend, bmUpdate, bmAppendUpdate, bmDelete, bmCopy);
+  TDbfBatchOption = (boUsePhysicalFieldNo);
+  TDbfBatchOptions = set of TDbfBatchOption;
 //====================================================================
   TDbfFileNames = set of TDbfFileName;
 //====================================================================
@@ -410,10 +413,14 @@ type
     procedure CreateTable;
     procedure CreateTableEx(ADbfFieldDefs: TDbfFieldDefs);
     procedure CopyFrom(DataSet: TDataSet; FileName: string; DateTimeAsString: Boolean; Level: Integer);
+    procedure BatchMove(DataSet: TDataSet; FileName: string; DateTimeAsString: Boolean; Level: Integer; Mode: TDbfBatchMode; Options: TDbfBatchOptions; FieldMappings: TStrings);
     procedure RestructureTable(ADbfFieldDefs: TDbfFieldDefs; Pack: Boolean);
     procedure PackTable;
     procedure EmptyTable;
     procedure Zap;
+    procedure BatchStart;
+    procedure BatchUpdate;
+    procedure BatchFinish;
     function DeleteMdxFile: Boolean;
 
 {$ifndef SUPPORT_INITDEFSFROMFIELDS}
@@ -1415,7 +1422,10 @@ end;
 
 function TDbf.LockTable(const Wait: Boolean): Boolean;
 begin
-  CheckActive;
+{$BOOLEVAL OFF}
+  if not(Assigned(FDbfFile) and FDbfFile.Active) then
+{$BOOLEVAL ON}
+    CheckActive;
   Result := FDbfFile.LockAllPages(Wait);
   UpdateLock;
 end;
@@ -1647,6 +1657,28 @@ begin
   FDbfFile.Zap;
 end;
 
+procedure TDbf.BatchStart;
+begin
+  DisableControls;
+  if Assigned(FDbfFile) then
+    FDbfFile.BatchStart;
+  FInCopyFrom := True;
+end;
+
+procedure TDbf.BatchUpdate;
+begin
+  if Assigned(FDbfFile) then
+    FDbfFile.BatchUpdate;
+end;
+
+procedure TDbf.BatchFinish;
+begin
+  FInCopyFrom := False;
+  if Assigned(FDbfFile) then
+    FDbfFile.BatchFinish;
+  EnableControls;
+end;
+
 function TDbf.DeleteMdxFile: Boolean;
 begin
   CheckActive;
@@ -1673,7 +1705,12 @@ begin
 
   // do restructure
   try
-    FDbfFile.RestructureTable(ADbfFieldDefs, Pack);
+    BatchStart;
+    try
+      FDbfFile.RestructureTable(ADbfFieldDefs, Pack);
+    finally
+      BatchFinish;
+    end;
   finally
     // close file
     FreeAndNil(FDbfFile);
@@ -1691,7 +1728,12 @@ begin
   // pack
   FDbfFile.OnProgress := FOnProgress;
   try
-    FDbfFile.RestructureTable(nil, true);
+    BatchStart;
+    try
+      FDbfFile.RestructureTable(nil, true);
+    finally
+      BatchFinish;
+    end;
   finally
     FDbfFile.OnProgress := nil;
   end;
@@ -1700,15 +1742,73 @@ begin
 end;
 
 procedure TDbf.CopyFrom(DataSet: TDataSet; FileName: string; DateTimeAsString: Boolean; Level: Integer);
-var
-  lPhysFieldDefs, lFieldDefs: TDbfFieldDefs;
+begin
+  BatchMove(DataSet, FileName, DateTimeAsString, Level, bmCopy, [], nil);
+end;
+
+procedure TDbf.BatchMove(DataSet: TDataSet; FileName: string; DateTimeAsString: Boolean; Level: Integer; Mode: TDbfBatchMode; Options: TDbfBatchOptions; FieldMappings: TStrings); // 02/25/2011 spb CR 18708
+var                                                                                                                                                                               // 03/08/2011 spb CR 18716
+  lPhysFieldDefs, lFieldDefs: TDbfFieldDefs;                                                                                                                                      // 03/08/2011 pb  CR 18706
   lSrcField, lDestField: TField;
   I: integer;
   cur, last: Integer;
+  lSourceFields: TList;
+  lDestinationFields: TList;
+  lSourceFieldCount : Integer;
+  lDestinationFieldCount : Integer;
+  SourceName: string;
+  DestinationName: string;
+  lSrcFieldDef, lDestFieldDef: TDbfFieldDef;
+  CopyLen: Integer;
+  SrcBuffer: PChar;
+  DestBuffer: PChar;
+  CopyBlob: Boolean;
+  BlobStream: TMemoryStream;
+  lBlobPageNo: Integer;
+
+  procedure GetFieldMappingNames;
+  var
+    SeparatorPos: Integer;
+  begin
+    SeparatorPos := Pos('=', FieldMappings[I]);
+    if SeparatorPos > 1 then
+    begin
+      SourceName := Trim(Copy(FieldMappings[I], 1, Pred(SeparatorPos)));
+      DestinationName := Trim(Copy(FieldMappings[I], Succ(SeparatorPos), Length(FieldMappings[I])));
+    end
+    else
+    begin
+      SourceName := Trim(FieldMappings[I]);
+      DestinationName := SourceName;
+    end;
+  end;
+
+  procedure AddSourceField;
+  begin
+    if Assigned(lSrcField) then
+      with lFieldDefs.AddFieldDef do
+      begin
+        if Length(lSrcField.Name) > 0 then
+          FieldName := lSrcField.Name
+        else
+          FieldName := lSrcField.FieldName;
+        FieldType := lSrcField.DataType;
+        Required := lSrcField.Required;
+        if (1 <= lSrcField.FieldNo)
+            and (lSrcField.FieldNo <= lPhysFieldDefs.Count) then
+        begin
+          Size := lPhysFieldDefs.Items[lSrcField.FieldNo-1].Size;
+          Precision := lPhysFieldDefs.Items[lSrcField.FieldNo-1].Precision;
+        end;
+      end;
+  end;
+
 begin
-  FInCopyFrom := true;
+//FInCopyFrom := true;
   lFieldDefs := TDbfFieldDefs.Create(nil);
   lPhysFieldDefs := TDbfFieldDefs.Create(nil);
+  lSourceFields := nil;
+  lDestinationFields := nil;
   try
     if Active then
       Close;
@@ -1728,105 +1828,217 @@ begin
     end else begin
 {$ifdef SUPPORT_FIELDDEF_TPERSISTENT}
       lPhysFieldDefs.Assign(DataSet.FieldDefs);
-{$endif}      
+{$endif}
       IndexDefs.Clear;
     end;
     // convert list of tfields into a list of tdbffielddefs
     // so that our tfields will correspond to the source tfields
-    for I := 0 to Pred(DataSet.FieldCount) do
+    lSourceFields := TList.Create;
+    lDestinationFields := TList.Create;
+    if Mode = bmCopy then
     begin
-      lSrcField := DataSet.Fields[I];
-      with lFieldDefs.AddFieldDef do
-      begin
-        if Length(lSrcField.Name) > 0 then
-          FieldName := AnsiString(lSrcField.Name)
-        else
-          FieldName := AnsiString(lSrcField.FieldName);
-        FieldType := lSrcField.DataType;
-        Required := lSrcField.Required;
-        if (1 <= lSrcField.FieldNo) 
-            and (lSrcField.FieldNo <= lPhysFieldDefs.Count) then
+      if boUsePhysicalfieldNo in Options then
+        lSourceFieldCount := DataSet.FieldDefs.Count
+      else
+        lSourceFieldCount := DataSet.FieldCount;
+      if Assigned(FieldMappings) and (FieldMappings.Count > 0) then
+        for I := 0 to Pred(FieldMappings.Count) do
         begin
-          Size := lPhysFieldDefs.Items[lSrcField.FieldNo-1].Size;
-          Precision := lPhysFieldDefs.Items[lSrcField.FieldNo-1].Precision;
-        end;
-      end;
-    end;
-
-    CreateTableEx(lFieldDefs);
-    Open;
-    FDbfFile.InCopyFrom := True;
-    DataSet.First;
-{$ifdef USE_CACHE}
-    FDbfFile.BufferAhead := true;
-    if DataSet is TDbf then
-      TDbf(DataSet).DbfFile.BufferAhead := true;
-{$endif}      
-    cur := 0;
-    if Assigned(FOnProgress) and (DataSet is TDbf) then
-    begin
-      last := TDbf(DataSet).PhysicalRecordCount;
-      FDbfFile.OnProgress := FOnProgress;
-      FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
-    end
-    else
-      last:= -1;
-    try
-      while not DataSet.EOF do
-      begin
-        Append;
-        for I := 0 to Pred(FieldCount) do
+          GetFieldMappingNames;
+          lSrcField := DataSet.Fields.FindField(SourceName);
+          AddSourceField;
+          lSourceFields.Add(Pointer(lSrcField));
+        end
+      else
+        for I := 0 to Pred(lSourceFieldCount) do
         begin
-          lSrcField := DataSet.Fields[I];
-          lDestField := Fields[I];
-          if not lSrcField.IsNull then
-          begin
-            if lSrcField.DataType = ftDateTime then
-            begin
-              if FCopyDateTimeAsString then
-              begin
-                lDestField.AsString := lSrcField.AsString;
-                if Assigned(FOnCopyDateTimeAsString) then
-                  FOnCopyDateTimeAsString(Self, lDestField, lSrcField)
-              end else
-                lDestField.AsDateTime := lSrcField.AsDateTime;
-            end else
-              lDestField.Assign(lSrcField);
-          end;
-        end;
-        Post;
-        if DataSet is TDbf then
-          if TDbf(DataSet).IsDeleted then
-            Delete;
-        DataSet.Next;
-        if last >= 0 then
-        begin
-          if TDbf(DataSet).FCursor is TIndexCursor then
-            Inc(cur)
+          if boUsePhysicalfieldNo in Options then
+            lSrcField := DataSet.Fields.FieldByNumber(Succ(I))
           else
-            cur := TDbf(DataSet).PhysicalRecNo;
-          FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+            lSrcField := DataSet.Fields[I];
+          AddSourceField;
+          lSourceFields.Add(Pointer(lSrcField));
         end;
-      end;
-      if (last >= 0) and (cur < last) then
-      begin
-        cur := last;
-        FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+      CreateTableEx(lFieldDefs);
+      Open;
+      lDestinationFieldCount := FieldDefs.Count;
+      for I := 1 to lDestinationFieldCount do
+        lDestinationFields.Add(Pointer(Fields.FieldByNumber(I)));
+    end
+    else if Mode = bmAppend then
+    begin
+      Open;
+      lDestinationFieldCount := FieldDefs.Count;
+      lSourceFields.Count := lDestinationFieldCount;
+      lDestinationFields.Count := lDestinationFieldCount;
+      if Assigned(FieldMappings) then
+        for I := 0 to Pred(FieldMappings.Count) do
+        begin
+          GetFieldMappingNames;
+          lDestField := Fields.FindField(DestinationName);
+          lSrcField := DataSet.Fields.FindField(SourceName);
+          if Assigned(lDestField) then
+            if (1 <= lDestField.FieldNo) and (lDestField.FieldNo <= lDestinationFieldCount) then
+              begin
+                lSourceFields[Pred(lDestField.FieldNo)] := lSrcField;
+                lDestinationFields[Pred(lDestField.FieldNo)] := lDestField;
+              end;
+        end
+      else
+        for I := 1 to lDestinationFieldCount do
+          if I <= DataSet.FieldDefs.Count then
+            begin
+              lSourceFields[Pred(I)] := Pointer(DataSet.Fields.FieldByNumber(I));
+              lDestinationfields[Pred(I)] := Pointer(Fields.FieldByNumber(I));
+            end;
+    end;
+    BatchStart;
+    try
+      if DataSet is TDbf then
+        TDbf(DataSet).BatchStart;
+      try
+        cur := 0;
+        if Assigned(FOnProgress) and (DataSet is TDbf) then
+        begin
+          last := TDbf(DataSet).PhysicalRecordCount;
+          FDbfFile.OnProgress := FOnProgress;
+          FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+        end
+        else
+          last := -1;
+        try
+          BlobStream := TMemoryStream.Create;
+          try
+            while not DataSet.EOF do
+            begin
+              Append;
+              for I := 0 to Pred(lDestinationFields.Count) do
+              begin
+                lSrcField := TField(lSourceFields[I]);
+                lDestField := TField(lDestinationFields[I]);
+                if Assigned(lSrcField) and Assigned(lDestField) then
+                begin
+                  CopyLen := -1;
+                  CopyBlob := False;
+                  if DataSet is TDbf then
+                  begin
+                    lSrcFieldDef := TDbf(DataSet).DbfFieldDefs.Items[Pred(lSrcField.FieldNo)];
+                    lDestFieldDef := DbfFieldDefs.Items[Pred(lDestField.FieldNo)];
+                    if lSrcFieldDef.NativeFieldType = lDestFieldDef.NativeFieldType then
+                    begin
+                      if lSrcFieldDef.IsBlob then
+                        CopyBlob := True
+                      else
+                      begin
+                        if lSrcFieldDef.NativeFieldType = 'C' then
+                        begin
+                          if lSrcFieldDef.Size > lDestFieldDef.Size then
+                            CopyLen := lDestFieldDef.Size
+                          else
+                            CopyLen := lSrcFieldDef.Size;
+                        end
+                        else
+                        begin
+                          if (lSrcFieldDef.Size = lDestFieldDef.Size) and (lSrcFieldDef.Precision = lDestFieldDef.Precision) then
+                            CopyLen := lSrcFieldDef.Size;
+                        end;
+                      end;
+                    end
+                  end
+                  else
+                  begin
+                    lSrcFieldDef := nil;
+                    lDestFieldDef := nil;
+                  end;
+                  SrcBuffer := PChar(@pDbfRecord(DataSet.ActiveBuffer).DeletedFlag);
+                  DestBuffer := PChar(@pDbfRecord(ActiveBuffer).DeletedFlag);
+                  if CopyBlob then
+                  begin
+                    if FDbfFile.GetFieldDataFromDef(lSrcFieldDef, ftInteger, SrcBuffer, @lBlobPageNo, false) and (lBlobPageNo > 0) then
+                    begin
+                      TDbf(DataSet).FDbfFile.MemoFile.ReadMemo(lBlobPageNo, BlobStream);
+                      BlobStream.Position := 0;
+                      FDbfFile.MemoFile.WriteMemo(lBlobPageNo, 0, BlobStream);
+                      FDbfFile.SetFieldData(lDestFieldDef.Index, ftInteger, @lBlobPageNo, DestBuffer, false);
+                      BlobStream.Clear;
+                    end;
+                  end
+                  else
+                  begin
+                    if CopyLen > 0 then
+                    begin
+                      Inc(SrcBuffer, lSrcFieldDef.Offset);
+                      Inc(DestBuffer, lDestFieldDef.Offset);
+                      Move(SrcBuffer^, DestBuffer^, CopyLen);
+                      if (lDestFieldDef.NativeFieldType = 'C') and (TDbf(DataSet).DbfFile.DbfVersion >= xBaseVII) and (lDestFieldDef.Size > lSrcFieldDef.Size) and (not lSrcField.IsNull) then
+                        FillChar((DestBuffer + CopyLen)^, lDestFieldDef.Size - lSrcFieldDef.Size, ' ');
+                    end
+                    else
+                    begin
+                      if not lSrcField.IsNull then
+                      begin
+                        if lSrcField.DataType = ftDateTime then
+                        begin
+                          if FCopyDateTimeAsString then
+                          begin
+                            lDestField.AsString := lSrcField.AsString;
+                            if Assigned(FOnCopyDateTimeAsString) then
+                              FOnCopyDateTimeAsString(Self, lDestField, lSrcField)
+                          end else
+                            lDestField.AsDateTime := lSrcField.AsDateTime;
+                        end else
+                          lDestField.Assign(lSrcField);
+                      end;
+                    end;
+                  end;
+                end;
+              end;
+              Post;
+              if DataSet is TDbf then
+                if TDbf(DataSet).IsDeleted then
+                  Delete;
+              DataSet.Next;
+              if last >= 0 then
+              begin
+                if TDbf(DataSet).FCursor is TIndexCursor then
+                  Inc(cur)
+                else
+                  cur := TDbf(DataSet).PhysicalRecNo;
+                FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+              end;
+            end;
+            if (last >= 0) and (cur < last) then
+            begin
+              cur := last;
+              FDbfFile.DoProgress(cur, last, STRING_PROGRESS_APPENDINGRECORDS);
+            end;
+          finally
+            BlobStream.Free;
+          end;
+        finally
+          if last >= 0 then
+            FDbfFile.OnProgress:= nil;
+        end;
+      finally
+        if DataSet is TDbf then
+          TDbf(DataSet).BatchFinish;
       end;
     finally
-      if last >= 0 then
-        FDbfFile.OnProgress:= nil;
+      BatchFinish;
     end;
+    BatchUpdate;
     Close;
   finally
-{$ifdef USE_CACHE}
-    if (DataSet is TDbf) and (TDbf(DataSet).DbfFile <> nil) then
-      TDbf(DataSet).DbfFile.BufferAhead := false;
-{$endif}      
-    FInCopyFrom := false;
-    FDbfFile.InCopyFrom := False;
+//{$ifdef USE_CACHE}
+//  if (DataSet is TDbf) and (TDbf(DataSet).DbfFile <> nil) then
+//    TDbf(DataSet).DbfFile.BufferAhead := false;
+//{$endif}      
+//  FInCopyFrom := false;
+//  FDbfFile.InCopyFrom := False;
     lFieldDefs.Free;
     lPhysFieldDefs.Free;
+    lSourceFields.Free;
+    lDestinationFields.Free;
   end;
 end;
 
