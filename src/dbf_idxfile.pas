@@ -3540,30 +3540,18 @@ begin
     Result := true;
     I := 0;
     count := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
-    while (I < count) and Result do
+    while I < count do
     begin
-      try
-        try
-          Result := UpdateIndex(I, PrevBuffer, NewBuffer);
-        except
-          on EDbfIndexError do
-          begin
-            Result := False;
-            raise;
-          end;
-        else
-          raise;
-        end;
-      finally
-        if not Result then
+      Result := UpdateIndex(I, PrevBuffer, NewBuffer);
+      if not Result then
+      begin
+        // rollback updates to previous indexes
+        while I > 0 do
         begin
-          // rollback updates to previous indexes
-          while I > 0 do
-          begin
-            Dec(I);
-            UpdateIndex(I, NewBuffer, PrevBuffer);
-          end;
+          Dec(I);
+          UpdateIndex(I, NewBuffer, PrevBuffer);
         end;
+        break;
       end;
       Inc(I);
     end;
