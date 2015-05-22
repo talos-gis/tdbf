@@ -2110,11 +2110,11 @@ begin
   if FAutoIncPresent then
   begin
     // if shared, reread header to find new autoinc values
-    if NeedLocks then
-    begin
+//  if NeedLocks then
+//  begin
       // lock header so nobody else can use this value
-      LockPage(0, true);
-    end;
+//    LockPage(0, true);
+//  end;
 
     // find autoinc fields
     for I := 0 to FFieldDefs.Count-1 do
@@ -2145,8 +2145,8 @@ begin
     WriteHeader;
     
     // release lock if locked
-    if NeedLocks then
-      UnlockPage(0);
+//  if NeedLocks then
+//    UnlockPage(0);
   end;
 end;
 
@@ -2564,86 +2564,107 @@ var
 var
   I: Integer;
   error: TErrorContext;
+  Locked: Boolean;
 begin
-  // get new record index
   Result := 0;
-  newRecord := RecordCount+1;
-  // lock record so we can write data
-  while not LockPage(newRecord, false) do
-    Inc(newRecord);
-  // write autoinc value
-  if not FInCopyFrom then
-    ApplyAutoIncToBuffer(Buffer);
-  error := ecNone;
-  I := 0;
-  while I < FIndexFiles.Count do
-  begin
-    lIndex := TIndexFile(FIndexFiles.Items[I]);
-    if not lIndex.Insert(newRecord, Buffer, lIndex.UniqueMode) then
-      error := ecInsert;
-    if lIndex.WriteError then
-      error := ecWriteIndex;
-    if error <> ecNone then
-    begin
-      // if there's an index write error, I shouldn't
-      // try to write the dbf header and the new record,
-      // but raise an exception right away
-      UnlockPage(newRecord);
-      RollBackIndexesAndRaise(I, ecWriteIndex);
+  Locked := LockPage(0, False);
+  if not Locked then
+    raise EDbfError.Create(STRING_RECORD_LOCKED);
+  try
+    if not LockPage(-1, True) then
+      EDbfError.Create(STRING_RECORD_LOCKED);
+    try
+      // get new record index
+      newRecord := RecordCount+1;
+      // lock record so we can write data
+      if not LockPage(newRecord, False) then
+        EDbfError.Create(STRING_RECORD_LOCKED);
+      try
+        UnlockPage(0);
+        Locked := False;
+        // write autoinc value
+        if not FInCopyFrom then
+          ApplyAutoIncToBuffer(Buffer);
+        error := ecNone;
+        I := 0;
+        while I < FIndexFiles.Count do
+        begin
+          lIndex := TIndexFile(FIndexFiles.Items[I]);
+          if not lIndex.Insert(newRecord, Buffer, lIndex.UniqueMode) then
+            error := ecInsert;
+          if lIndex.WriteError then
+            error := ecWriteIndex;
+          if error <> ecNone then
+          begin
+            // if there's an index write error, I shouldn't
+            // try to write the dbf header and the new record,
+            // but raise an exception right away
+            RollBackIndexesAndRaise(I, ecWriteIndex);
+          end;
+          Inc(I);
+        end;
+
+        if NeedLocks then
+        begin
+          // indexes ok -> continue inserting
+          // update header record count
+          // read current header
+          ReadHeader;
+          // increase current record count
+          Inc(PDbfHdr(Header)^.RecordCount);
+          // write header to disk
+          WriteHeader;
+          // done with header
+        end;
+
+        if WriteError then
+        begin
+          // couldn't write header, so I shouldn't
+          // even try to write the record.
+          //
+          // At this point I should "roll back"
+          // the already written index records.
+          // if this fails, I'm in deep trouble!
+          RollbackIndexesAndRaise(FIndexFiles.Count, ecWriteDbf);
+        end;
+
+        // write locking info
+        if FLockField <> nil then
+          WriteLockInfo(Buffer);
+        // write buffer to disk
+        WriteRecord(newRecord, Buffer);
+        if NeedLocks then
+          WriteEofTerminator;
+
+        // done updating, unlock
+        //UnlockPage(newRecord);
+        // error occurred while writing?
+        if WriteError then
+        begin
+          // -- Tobias --
+          // The record couldn't be written, so
+          // the written index records and the
+          // change to the header have to be
+          // rolled back
+//        LockPage(0, true);
+          ReadHeader;
+          Dec(PDbfHdr(Header)^.RecordCount);
+          WriteHeader;
+//        UnlockPage(0);
+          // roll back indexes too
+          RollbackIndexesAndRaise(FIndexFiles.Count, ecWriteDbf);
+        end else
+          Result := newRecord;
+      finally
+        UnlockPage(newRecord);
+      end;
+    finally
+      UnlockPage(-1);
     end;
-    Inc(I);
+  finally
+    if Locked then
+      UnlockPage(0);
   end;
-
-  // indexes ok -> continue inserting
-  // update header record count
-  LockPage(0, true);
-  // read current header
-  ReadHeader;
-  // increase current record count
-  Inc(PDbfHdr(Header)^.RecordCount);
-  // write header to disk
-  WriteHeader;
-  // done with header
-  UnlockPage(0);
-
-  if WriteError then
-  begin
-    // couldn't write header, so I shouldn't
-    // even try to write the record.
-    //
-    // At this point I should "roll back"
-    // the already written index records.
-    // if this fails, I'm in deep trouble!
-    UnlockPage(newRecord);
-    RollbackIndexesAndRaise(FIndexFiles.Count, ecWriteDbf);
-  end;
-
-  // write locking info
-  if FLockField <> nil then
-    WriteLockInfo(Buffer);
-  // write buffer to disk
-  WriteRecord(newRecord, Buffer);
-  // write EOF terminator
-  WriteEofTerminator;
-  // done updating, unlock
-  UnlockPage(newRecord);
-  // error occurred while writing?
-  if WriteError then
-  begin
-    // -- Tobias --
-    // The record couldn't be written, so
-    // the written index records and the
-    // change to the header have to be
-    // rolled back
-    LockPage(0, true);
-    ReadHeader;
-    Dec(PDbfHdr(Header)^.RecordCount);
-    WriteHeader;
-    UnlockPage(0);
-    // roll back indexes too
-    RollbackIndexesAndRaise(FIndexFiles.Count, ecWriteDbf);
-  end else
-    Result := newRecord;
 end;
 
 procedure TDbfFile.WriteLockInfo(Buffer: TDbfRecordBuffer);
@@ -2674,10 +2695,19 @@ end;
 
 procedure TDbfFile.LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer; Resync: Boolean);
 var
-  Locked: Boolean;
+  Locked : Boolean;
 begin
   if NeedLocks then
-    Locked := LockPage(RecNo, false)
+  begin
+    if FVirtualLocks then
+    begin
+      if not LockPage(0, False) then
+        raise EDbfError.Create(STRING_RECORD_LOCKED);
+    end;
+    Locked := LockPage(RecNo, false);
+    if FVirtualLocks then
+      UnlockPage(0);
+  end
   else
     Locked := True;
   if Locked then

@@ -964,14 +964,18 @@ begin
   begin
     if FVirtualLocks then
     begin
+//    Offset := LockStart;
+//    Length := LockOffset - LockStart + FileLockSize;
 {$ifdef SUPPORT_UINT32_CARDINAL}
-      Offset := LockStart;
-      Length := LockOffset - LockStart + FileLockSize;
+      Offset := LockOffset;
+      Length := FileLockSize;
 {$else}
       // delphi 3 has strange types:
       // cardinal 0..2 GIG ?? does it produce correct code?
-      Offset := Cardinal(LockStart);
-      Length := Cardinal(LockOffset) - Cardinal(LockStart) + FileLockSize;
+//    Offset := Cardinal(LockStart);
+//    Length := Cardinal(LockOffset) - Cardinal(LockStart) + FileLockSize;
+      Offset := Cardinal(LockOffset);
+      Length := Cardinal(FileLockSize);
 {$endif}
     end else begin
       Offset := 0;
@@ -979,6 +983,14 @@ begin
     end;
     // lock requested section
     Result := LockSection(Offset, Length, Wait);
+    if FVirtualLocks and Result then
+    begin
+      Result := LockSection(LockStart, LockOffset - LockStart, Wait);
+      if Result then
+        UnlockSection(LockStart, LockOffset - LockStart)
+      else
+        UnlockSection(Offset, Length);
+    end;
     FFileLocked := Result;
   end else
     Result := true;
@@ -995,13 +1007,17 @@ begin
     if FVirtualLocks then
     begin
 {$ifdef SUPPORT_UINT32_CARDINAL}
-      Offset := LockStart;
-      Length := LockOffset - LockStart + FileLockSize;
+//    Offset := LockStart;
+//    Length := LockOffset - LockStart + FileLockSize;
+      Offset := LockOffset;
+      Length := FileLockSize;
 {$else}
       // delphi 3 has strange types:
       // cardinal 0..2 GIG ?? does it produce correct code?
-      Offset := Cardinal(LockStart);
-      Length := Cardinal(LockOffset) - Cardinal(LockStart) + FileLockSize;
+//    Offset := Cardinal(LockStart);
+//    Length := Cardinal(LockOffset) - Cardinal(LockStart) + FileLockSize;
+      Offset := Cardinal(LockOffset);
+      Length := Cardinal(FileLockSize);
 {$endif}
     end else begin
       Offset := 0;
@@ -1015,15 +1031,18 @@ end;
 
 function TPagedFile.LockPage(const PageNo: Integer; const Wait: Boolean): Boolean;
 var
-  Offset: TPagedFileSize;
+  Offset: Cardinal;
   Length: Cardinal;
 begin
   // do we need locking?
-  if FNeedLocks and not FFileLocked then
+  if FNeedLocks then
   begin
     if FVirtualLocks then
     begin
-      Offset := LockOffset - Cardinal(PageNo);
+      if PageNo >= 0 then
+        Offset := LockOffset - Cardinal(PageNo)
+      else
+        Offset := LockOffset + Cardinal(-PageNo);
       Length := 1;
     end else begin
       Offset := CalcPageOffset(PageNo);
@@ -1037,16 +1056,19 @@ end;
 
 procedure TPagedFile.UnlockPage(const PageNo: Integer);
 var
-  Offset: TPagedFileSize;
+  Offset: Cardinal;
   Length: Cardinal;
 begin
   // do we need locking?
-  if FNeedLocks and not FFileLocked then
+  if FNeedLocks then
   begin
     // calc offset + length
     if FVirtualLocks then
     begin
-      Offset := LockOffset - Cardinal(PageNo);
+      if PageNo >= 0 then
+        Offset := LockOffset - Cardinal(PageNo)
+      else
+        Offset := LockOffset + Cardinal(-PageNo);
       Length := 1;
     end else begin
       Offset := CalcPageOffset(PageNo);

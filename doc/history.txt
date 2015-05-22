@@ -117,6 +117,7 @@ following changes thx paulenandrew:
 - add missing message translations (fr, ita, nl, pl, ru)
 - include deleted records in distinct index (compatible with BDE)
 - build index using partial bulkloading, achieves much better performance (comparable to BDE)
+- fix record and table locking algorithm - when table is locked, can edit a record anyway and adding a record causes it to hang (also compatible with BDE)
 
 ------------------------
 V6.9.1
