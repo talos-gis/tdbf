@@ -217,141 +217,6 @@ const
 
 {$I dbf_struct.inc}
 
-
-//====================================================================
-// International separator
-// thanks to Bruno Depero from Italy
-// and Andreas Wöllenstein from Denmark
-//====================================================================
-
-{$ifdef SUPPORT_FORMATSETTINGSTYPE}
-// if we have the overloaded FloatToText versions that take a TFormatSettings parameter,
-// we use them with this variable (initialized in the inialization section).
-// Otherwise the code is more complex.
-var
-  FORMAT_SETTINGS_DECIMAL_POINT: TFormatSettings;
-{$endif SUPPORT_FORMATSETTINGSTYPE}
-
-
-{$ifdef SUPPORT_FORMATSETTINGSTYPE}
-function DbfStrToFloat(const Src: PAnsiChar; const Size: Integer): Extended; // Was PChar
-var
-  endChar: AnsiChar;
-begin
-  // temp null-term string
-  endChar := (PAnsiChar(Src) + Size)^;
-  try
-    (PAnsiChar(Src) + Size)^ := #0;
-    // convert to double
-    if not dbfTextToFloatFmt(PAnsiChar(Src), Result, fvExtended, FORMAT_SETTINGS_DECIMAL_POINT) then
-      Result := 0;
-    // restore Char of null-term
-  finally
-    (PAnsiChar(Src) + Size)^ := endChar;
-  end;
-end;
-{$else SUPPORT_FORMATSETTINGSTYPE}
-function DbfStrToFloat(const Src: PAnsiChar; const Size: Integer): Extended; // Was PChar
-var
-  iPos: PAnsiChar;
-  eValue: extended;
-  endChar: AnsiChar;
-begin
-  // temp null-term string
-  endChar := (PAnsiChar(Src) + Size)^;
-  try
-    (PAnsiChar(Src) + Size)^ := #0;
-    // we only have to convert if decimal separator different
-    if DecimalSeparator <> sDBF_DEC_SEP then
-    begin
-      // search dec sep
-      iPos := dbfStrScan(Src, AnsiChar(sDBF_DEC_SEP));
-      // replace
-      if iPos <> nil then
-        iPos^ := AnsiChar(DecimalSeparator);
-    end else
-      iPos := nil;
-    // convert to double
-    if dbfTextToFloat(Src, eValue {$ifndef VER1_0}, fvExtended{$endif}) then
-      Result := eValue
-    else
-      Result := 0;
-    // restore dec sep
-    if iPos <> nil then
-      iPos^ := sDBF_DEC_SEP;
-    // restore Char of null-term
-  finally
-    (PAnsiChar(Src) + Size)^ := endChar;
-  end;
-end;
-{$endif SUPPORT_FORMATSETTINGS}
-
-{$ifdef SUPPORT_FORMATSETTINGSTYPE}
-procedure FloatToDbfStr(const Val: Extended; const Size, Precision: Integer; const Dest: PAnsiChar);
-var
-  Buffer: array[0..63] of char;
-  B : PAnsiChar;
-  s : AnsiString;
-  resLen: Integer;
-begin
-  resLen := dbfFloatToTextFmt(PAnsiChar(@Buffer), Val, fvExtended, ffFixed, Size, Precision, FORMAT_SETTINGS_DECIMAL_POINT);
-  SetString(s, PAnsiChar(@Buffer), resLen); // was PChar
-  B := PAnsiChar(s);
-
-  // fill destination with spaces
-  FillChar(Dest^, Size, ' ');
-  // now copy right-aligned to destination
-  Move(B^, Dest[Size-resLen], resLen);
-end;
-{$else SUPPORT_FORMATSETTINGSTYPE}
-procedure FloatToDbfStr(const Val: Extended; const Size, Precision: Integer; const Dest: PAnsiChar);
-var
-  Buffer: array[0..63] of AnsiChar;
-  resLen: Integer;
-  iPos: PAnsiChar;
-begin
-  // convert to temporary buffer
-  resLen := dbfFloatToText(PAnsiChar(@Buffer), Val, {$ifndef FPC_VERSION}fvExtended,{$endif} ffFixed, Size, Precision);
-  // prevent overflow in destination buffer
-  if resLen > Size then
-    resLen := Size;
-  // null-terminate buffer
-  Buffer[resLen] := #0;
-  // we only have to convert if decimal separator different
-  if DecimalSeparator <> sDBF_DEC_SEP then
-  begin
-    iPos := dbfStrScan(PAnsiChar(@Buffer), AnsiChar(DecimalSeparator));
-    if iPos <> nil then
-      iPos^ := sDBF_DEC_SEP;
-  end;
-  // fill destination with spaces
-  FillChar(Dest^, Size, ' ');
-  // now copy right-aligned to destination
-  Move(Buffer[0], Dest[Size-resLen], resLen);
-end;
-{$endif SUPPORT_FORMATSETTINGS}
-
-//-------------------------------------------------------------------------------
-// Rev. 2010-02-23 : Rafal Chlopek - shorter conversion
-//-------------------------------------------------------------------------------
-function GetIntFromStrLength(Src: PAnsiChar; Size: Integer; Default: Integer): Integer; // Was Pointer
-{var endChar: AnsiChar;
-  Code: Integer;}
-begin
-  Result := StrToIntDef(Copy(String(Src), 1, Size), Default);   // SHORT WAY, PAnsiChar cast no longer needed
-
-  {// save Char at pos term. null
-  endChar := (PAnsiChar(Src) + Size)^;                  // NIGHTMARE WAY :-)
-  (PAnsiChar(Src) + Size)^ := #0;
-  // convert
-  Val(String(PAnsiChar(Src)), Result, Code);
-  // check success
-  if Code <> 0 then
-    Result := Default;
-  // restore prev. ending Char
-  (PAnsiChar(Src) + Size)^ := endChar;  }
-end;
-
 //====================================================================
 // TDbfFile
 //====================================================================
@@ -473,7 +338,8 @@ begin
           begin
             FFileCodePage := 1255;
           end else begin
-            FFileCodePage := GetIntFromStrLength(LangStr+2, 3, 0);
+//          FFileCodePage := GetIntFromStrLength(LangStr+2, 3, 0);
+            StrToInt32Width(Integer(FFileCodePage), LangStr+2, 3, 0);
             if (Ord(LangStr[5]) >= Ord('0')) and (Ord(LangStr[5]) <= Ord('9')) then
               FFileCodePage := FFileCodePage * 10 + Ord(LangStr[5]) - Ord('0');
           end;
@@ -483,7 +349,8 @@ begin
           if dbfStrLComp(LangStr+5, 'WIN', 3) = 0 then
             FFileCodePage := 1252
           else
-            FFileCodePage := GetIntFromStrLength(LangStr+5, 3, 0)
+//          FFileCodePage := GetIntFromStrLength(LangStr+5, 3, 0)
+            StrToInt32Width(Integer(FFileCodePage), LangStr+5, 3, 0);
         end else begin
           FFileCodePage := 0;
         end;
@@ -1544,28 +1411,6 @@ var
   timeStamp: TTimeStamp;
   asciiContents: boolean;
 
-{$ifdef SUPPORT_INT64}
-  //-------------------------------------------------------------------------------
-  // Rev. 2010-02-23 : Rafal Chlopek - shorter conversion
-  //-------------------------------------------------------------------------------
-  function GetInt64FromStrLength(Src: PAnsiChar; Size: Integer; Default: Int64): Int64; // Was Pointer
-  {var endChar: AnsiChar;
-    Code: Integer;}
-  begin
-    Result := StrToInt64Def(Copy(String(Src), 1, Size), Default);   // SHORT WAY, PAnsiChar cast no longer needed
-
-    {// save Char at pos term. null
-    endChar := (PAnsiChar(Src) + Size)^;                    // NIGHTMARE WAY :-)
-    (PAnsiChar(Src) + Size)^ := #0;
-    // convert
-    Val(PAnsiChar(Src), Result, Code);
-    // check success
-    if Code <> 0 then Result := Default;
-    // restore prev. ending Char
-    (PAnsiChar(Src) + Size)^ := endChar;  }
-  end;
-{$endif}
-
   procedure CorrectYear(var wYear: Integer);
   var
     wD, wM, wY, CenturyBase: Word;
@@ -1747,26 +1592,43 @@ begin
             PWord(Dst)^ := 0;
         end;
       ftSmallInt:
-        PSmallInt(Dst)^ := GetIntFromStrLength(Src, FieldSize, 0);
+      begin
+//      PSmallInt(Dst)^ := GetIntFromStrLength(Src, FieldSize, 0);
+        Result := StrToInt32Width(IntValue, Src, FieldSize, 0);
+        if Result then
+          Result := (IntValue >= Low(SmallInt)) and (IntValue <= High(SmallInt));
+        if Result then
+          PSmallInt(Dst)^ := IntValue;
+      end;
 {$ifdef SUPPORT_INT64}
       ftLargeInt:
-        PLargeInt(Dst)^ := GetInt64FromStrLength(Src, FieldSize, 0);
+//      PLargeInt(Dst)^ := GetInt64FromStrLength(Src, FieldSize, 0);
+        Result := StrToIntWidth(PInt64(Dst)^, Src, FieldSize, 0);
 {$endif}
       ftInteger:
-        PInteger(Dst)^ := GetIntFromStrLength(Src, FieldSize, 0);
+//      PInteger(Dst)^ := GetIntFromStrLength(Src, FieldSize, 0);
+        Result := StrToInt32Width(PInteger(Dst)^, Src, FieldSize, 0);
       ftFloat, ftCurrency:
-        PDouble(Dst)^ := DbfStrToFloat(Src, FieldSize);
+      begin
+//      PDouble(Dst)^ := DbfStrToFloat(Src, FieldSize);
+        Result := StrToFloatWidth(FloatValue, Src, FieldSize, 0);
+        if Result then
+          PDouble(Dst)^ := FloatValue;
+      end;
       ftDate, ftDateTime:
         begin
           // get year, month, day
-          ldy := GetIntFromStrLength(PAnsiChar(Src) + 0, 4, 1);
-          ldm := GetIntFromStrLength(PAnsiChar(Src) + 4, 2, 1);
-          ldd := GetIntFromStrLength(PAnsiChar(Src) + 6, 2, 1);
+//        ldy := GetIntFromStrLength(PAnsiChar(Src) + 0, 4, 1);
+//        ldm := GetIntFromStrLength(PAnsiChar(Src) + 4, 2, 1);
+//        ldd := GetIntFromStrLength(PAnsiChar(Src) + 6, 2, 1);
+          StrToInt32Width(ldy, PChar(Src) + 0, 4, 1);
+          StrToInt32Width(ldm, PChar(Src) + 4, 2, 1);
+          StrToInt32Width(ldd, PChar(Src) + 6, 2, 1);
           //if (ly<1900) or (ly>2100) then ly := 1900;
           //Year from 0001 to 9999 is possible
           //everyting else is an error, an empty string too
           //Do DateCorrection with Delphis possibillities for one or two digits
-          if (ldy < 100) and (PAnsiChar(Src)[0] = #32) and (PAnsiChar(Src)[1] = #32) then
+          if (ldy < 100) and (PChar(Src)[0] = #32) and (PChar(Src)[1] = #32) then
             CorrectYear(ldy);
           try
             date := EncodeDate(ldy, ldm, ldd);
@@ -1778,9 +1640,12 @@ begin
           if (AFieldDef.FieldType = ftDateTime) and (DataType = ftDateTime) then
           begin
             // get hour, minute, second
-            lth := GetIntFromStrLength(PAnsiChar(Src) + 8,  2, 1);
-            ltm := GetIntFromStrLength(PAnsiChar(Src) + 10, 2, 1);
-            lts := GetIntFromStrLength(PAnsiChar(Src) + 12, 2, 1);
+//          lth := GetIntFromStrLength(PAnsiChar(Src) + 8,  2, 1);
+//          ltm := GetIntFromStrLength(PAnsiChar(Src) + 10, 2, 1);
+//          lts := GetIntFromStrLength(PAnsiChar(Src) + 12, 2, 1);
+            StrToInt32Width(lth, PAnsiChar(Src) + 8,  2, 1);
+            StrToInt32Width(ltm, PAnsiChar(Src) + 10, 2, 1);
+            StrToInt32Width(lts, PAnsiChar(Src) + 12, 2, 1);
             // encode
             try
               date := date + EncodeTime(lth, ltm, lts, 0);
@@ -2001,33 +1866,43 @@ begin
               PAnsiChar(Dst)^ := 'F';
           end;
         ftSmallInt:
-          GetStrFromInt_Width(PSmallInt(Src)^, FieldSize, PAnsiChar(Dst), #32);
+//        GetStrFromInt_Width(PSmallInt(Src)^, FieldSize, PAnsiChar(Dst), #32);
+          IntToStrWidth(PSmallInt(Src)^, FieldSize, PChar(Dst), True, #32);
 {$ifdef SUPPORT_INT64}
         ftLargeInt:
-          GetStrFromInt64_Width(PLargeInt(Src)^, FieldSize, PAnsiChar(Dst), #32);
+//        GetStrFromInt64_Width(PLargeInt(Src)^, FieldSize, PAnsiChar(Dst), #32);
+          IntToStrWidth(PInt64(Src)^, FieldSize, PChar(Dst), True, #32);
 {$endif}
         ftFloat, ftCurrency:
-          FloatToDbfStr(PDouble(Src)^, FieldSize, FieldPrec, PAnsiChar(Dst));
+//        FloatToDbfStr(PDouble(Src)^, FieldSize, FieldPrec, PAnsiChar(Dst));
+          FloatToStrWidth(PDouble(Src)^, FieldSize, FieldPrec, PChar(Dst), True);
         ftInteger:
-          GetStrFromInt_Width(PInteger(Src)^, FieldSize, PAnsiChar(Dst),
-            IsBlobFieldToPadChar[TempFieldDef.IsBlob]);
+//        GetStrFromInt_Width(PInteger(Src)^, FieldSize, PAnsiChar(Dst),
+//          IsBlobFieldToPadChar[TempFieldDef.IsBlob]);
+          IntToStrWidth(PInteger(Src)^, FieldSize, PChar(Dst), True, IsBlobFieldToPadChar[TempFieldDef.IsBlob]);
         ftDate, ftDateTime:
           begin
             LoadDateFromSrc;
             // decode
             DecodeDate(date, year, month, day);
             // format is yyyymmdd
-            GetStrFromInt_Width(year,  4, PAnsiChar(Dst),   '0');
-            GetStrFromInt_Width(month, 2, PAnsiChar(Dst)+4, '0');
-            GetStrFromInt_Width(day,   2, PAnsiChar(Dst)+6, '0');
+//          GetStrFromInt_Width(year,  4, PAnsiChar(Dst),   '0');
+//          GetStrFromInt_Width(month, 2, PAnsiChar(Dst)+4, '0');
+//          GetStrFromInt_Width(day,   2, PAnsiChar(Dst)+6, '0');
+            IntToStrWidth(year,  4, PChar(Dst),   True, DBF_ZERO);
+            IntToStrWidth(month, 2, PChar(Dst)+4, True, DBF_ZERO);
+            IntToStrWidth(day,   2, PChar(Dst)+6, True, DBF_ZERO);
             // do time too if datetime
             if DataType = ftDateTime then
             begin
               DecodeTime(date, hour, minute, sec, msec);
               // format is hhmmss
-              GetStrFromInt_Width(hour,   2, PAnsiChar(Dst)+8,  '0');
-              GetStrFromInt_Width(minute, 2, PAnsiChar(Dst)+10, '0');
-              GetStrFromInt_Width(sec,    2, PAnsiChar(Dst)+12, '0');
+//            GetStrFromInt_Width(hour,   2, PAnsiChar(Dst)+8,  '0');
+//            GetStrFromInt_Width(minute, 2, PAnsiChar(Dst)+10, '0');
+//            GetStrFromInt_Width(sec,    2, PAnsiChar(Dst)+12, '0');
+              IntToStrWidth(hour,   2, PChar(Dst)+8,  True, DBF_ZERO);
+              IntToStrWidth(minute, 2, PChar(Dst)+10, True, DBF_ZERO);
+              IntToStrWidth(sec,    2, PChar(Dst)+12, True, DBF_ZERO);
             end;
           end;
         ftString:
@@ -2915,12 +2790,16 @@ var
 // PChar = PWideChar for Unicode, PAnsiChar otherwise
 
 function CodePagesProc(CodePageString: PChar): Cardinal; stdcall; // PChar intended here
+var
+  IntValue: Integer;
 begin
   // add codepage to list
 {$IFDEF WINAPI_IS_UNICODE}
   TempCodePageList.Add(Pointer(StrToIntDef(string(CodePageString), -1))); // Avoid conversion to AnsiString
 {$ELSE}
-  TempCodePageList.Add(Pointer(GetIntFromStrLength(CodePageString, dbfStrLen(CodePageString), -1)));
+//TempCodePageList.Add(Pointer(GetIntFromStrLength(CodePageString, dbfStrLen(CodePageString), -1)));
+  if StrToInt32Width(IntValue, CodePageString, dbfStrLen(CodePageString), -1) then
+    TempCodePageList.Add(Pointer(IntValue));
 {$ENDIF}
 
   // continue enumeration
@@ -3004,11 +2883,6 @@ end;
 {$endif SUPPORT_FORMATSETTINGSTYPE}
 
 initialization
-{$ifdef SUPPORT_FORMATSETTINGSTYPE}
-  FORMAT_SETTINGS_DECIMAL_POINT := GetUserDefaultLocaleSettings;
-  FORMAT_SETTINGS_DECIMAL_POINT.DecimalSeparator := '.';
-  FORMAT_SETTINGS_DECIMAL_POINT.ThousandSeparator := #0;
-{$endif SUPPORT_FORMATSETTINGSTYPE}
   DbfGlobals := TDbfGlobals.Create;
 finalization
   FreeAndNil(DbfGlobals);

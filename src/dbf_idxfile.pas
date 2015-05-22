@@ -3238,6 +3238,7 @@ begin
             FUserNumeric := PInteger(Buffer)^;
             Result := TDbfRecordBuffer(@FUserNumeric);
           end;
+        etFloat: Result:= Buffer;
 {$ifdef SUPPORT_INT64}
         etLargeInt:
           begin
@@ -3250,12 +3251,13 @@ begin
       // DB4 MDX
       NumDecimals := 0;
       case ResultType of
-        etInteger:
+        etInteger: 
           begin
             IntSrc := PInteger(Buffer)^;
             // handle zero differently: no decimals
             if IntSrc <> 0 then
-              NumDecimals := GetStrFromInt(IntSrc, @FloatRec.Digits[0])
+//            NumDecimals := GetStrFromInt(IntSrc, @FloatRec.Digits[0])
+              NumDecimals := IntToStrWidth(IntSrc, SizeOf(FloatRec.Digits), @FloatRec.Digits[0], False, #0)
             else
               NumDecimals := 0;
             FloatRec.Negative := IntSrc < 0;
@@ -3265,7 +3267,8 @@ begin
           begin
             Int64Src := PLargeInt(Buffer)^;
             if Int64Src <> 0 then
-              NumDecimals := GetStrFromInt64(Int64Src, @FloatRec.Digits[0])
+//            NumDecimals := GetStrFromInt64(Int64Src, @FloatRec.Digits[0])
+              NumDecimals := IntToStrWidth(Int64Src, SizeOf(FloatRec.Digits), @FloatRec.Digits[0], False, #0)
             else
               NumDecimals := 0;
             FloatRec.Negative := Int64Src < 0;
@@ -3274,7 +3277,8 @@ begin
         etFloat:
           begin
             ExtValue := PDouble(Buffer)^;
-            FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 15, 999);
+//          FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 999, 15);
+            FloatToDecimal(FloatRec, ExtValue, {$ifndef FPC_VERSION}fvExtended,{$endif} 15, 9999);
             if ExtValue <> 0.0 then
               NumDecimals := dbfStrLen(PAnsiChar(@FloatRec.Digits[0]))
             else
