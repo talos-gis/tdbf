@@ -546,10 +546,12 @@ function TableLevelToDbfVersion(TableLevel: integer): TXBaseVersion;
 begin
   case TableLevel of
     3:                      Result := xBaseIII;
+    4:                      Result := xBaseIV;
+    5:                      Result := xBaseV;
     7:                      Result := xBaseVII;
     TDBF_TABLELEVEL_FOXPRO: Result := xFoxPro;
   else
-    {4:} Result := xBaseIV;
+    Result := xUnknown;
   end;
 end;
 
@@ -1297,6 +1299,7 @@ begin
     case FDbfFile.DbfVersion of
       xBaseIII: FTableLevel := 3;
       xBaseIV:  FTableLevel := 4;
+      xBaseV:   FTableLevel := 5;
       xBaseVII: FTableLevel := 7;
       xFoxPro:  FTableLevel := TDBF_TABLELEVEL_FOXPRO;
     end;
@@ -2725,7 +2728,7 @@ begin
   if NewLevel <> FTableLevel then
   begin
     // check validity
-    if not ((NewLevel = 3) or (NewLevel = 4) or (NewLevel = 7) or (NewLevel = 25)) then
+    if not ((NewLevel = 3) or (NewLevel = 4) or (NewLevel = 5) or (NewLevel = 7) or (NewLevel = TDBF_TABLELEVEL_FOXPRO)) then
       exit;
 
     // can only assign tablelevel if table is closed

@@ -53,6 +53,7 @@ following changes thx paulenandrew:
 - update references to record number when inserting a record
 - when setting IndexName, do not resync index unless it changed
 - fix error when opening a table leaving it in an intermediate state
+- fully support TableLevel 5
 - changed the default TableLevel from 4 to 5, supports a much larger record size and is otherwise almost identical
 - maintain record number order within index entries with the same key
 - update FCachedSize when adding backlink to FoxPro file
