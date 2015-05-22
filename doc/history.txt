@@ -95,7 +95,6 @@ following changes thx paulenandrew:
 - fix Integer overflow errors if more than 2,147,483,648 entries in an index file (requires compiler to support Int64)
 - fix inaccurate floating point values in numeric index
 - consistently use EParserException for parser error
-- fix error handling if invalid record number in index
 - recalculate key length when rebuilding an index, to correct it if necessary
 - implement DeleteMdxFile to delete MDX index file and clear MDX flag, implement DeleteIndexFile to delete index file
 - consistently use EDbfIndexError for index error

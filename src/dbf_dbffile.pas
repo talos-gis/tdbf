@@ -2514,7 +2514,7 @@ begin
             // if there's an index write error, I shouldn't
             // try to write the dbf header and the new record,
             // but raise an exception right away
-            RollBackIndexesAndRaise(I, ecWriteIndex);
+            RollBackIndexesAndRaise(I, error);
           end;
           Inc(I);
         end;
