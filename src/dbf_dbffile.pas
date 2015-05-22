@@ -121,7 +121,6 @@ type
       Src, Dst: Pointer; NativeFormat: boolean): Boolean;
     procedure SetFieldData(Column: Integer; DataType: TFieldType; Src,Dst: Pointer; NativeFormat: boolean);
     procedure InitRecord(DestBuf: PAnsiChar);
-    procedure InitRecordForIndex(DestBuf: PAnsiChar);
     procedure PackIndex(lIndexFile: TIndexFile; AIndexName: string; CreateIndex: Boolean);
     procedure RegenerateIndexes;
     procedure LockRecord(RecNo: Integer; Buffer: TDbfRecordBuffer; Resync: Boolean);
@@ -2013,20 +2012,6 @@ begin
   if FDefaultBuffer = nil then
     InitDefaultBuffer;
   Move(FDefaultBuffer^, DestBuf^, RecordSize);
-end;
-
-procedure TDbfFile.InitRecordForIndex(DestBuf: PChar);
-var
-  I: Integer;
-  TempFieldDef: TDbfFieldDef;
-begin
-  InitRecord(DestBuf);
-  for I := 0 to FFieldDefs.Count - 1 do
-  begin
-    TempFieldDef := FFieldDefs.Items[I];
-    if (FDbfVersion >= xBaseVII) and (TempFieldDef.NativeFieldType='C') and (not TempFieldDef.HasDefault) then
-      FillChar(PAnsiChar(FDefaultBuffer+TempFieldDef.Offset)^, TempFieldDef.Size, ' ');
-  end;
 end;
 
 procedure TDbfFile.ApplyAutoIncToBuffer(DestBuf: TDbfRecordBuffer);

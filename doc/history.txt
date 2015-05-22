@@ -61,9 +61,9 @@ following changes thx paulenandrew:
 - fix memory leak if error opening an index
 - preserve deleted flag in TDbf.CopyFrom
 - if a memo field is set to an empty value, clear the reference so that it is null (consistent with BDE)
-- Add support for SetKey, GotoKey and GotoNearest
-- Maintain IndexDefs when DeleteIndex is used to delete an index
-- Add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
+- add support for SetKey, GotoKey and GotoNearest
+- maintain IndexDefs when DeleteIndex is used to delete an index
+- add support for @, O, I and + dBASE 7 index key types and I and + FoxPro index key types
 - preserve autoincrement field values in TDbf.CopyFrom
 - limit index name length in header to 8 (compatibility with BDE)
 - if TagsUsed is more than 47 tags in an index file, raise "Invalid MDX file." exception

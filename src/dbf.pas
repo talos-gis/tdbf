@@ -3238,17 +3238,20 @@ begin
   CheckBrowseMode;
   Result := FIndexFile.SearchKey(Buffer, SearchType);
   { if found, then retrieve new current record }
-  if Result then
+  if Result or (SearchType <> stEqual) then
   begin
     CursorPosChanged;
     Resync([]);
     UpdateCursorPos;
     { recno could have been changed due to deleted record, check if still matches }
-    matchRes := TIndexCursor(FCursor).IndexFile.MatchKey(Buffer);
-    case SearchType of
-      stEqual:        Result := matchRes =  0;
-      stGreater:      Result := (not Eof) and (matchRes <  0);
-      stGreaterEqual: Result := (not Eof) and (matchRes <= 0);
+    if Result then
+    begin
+      matchRes := TIndexCursor(FCursor).IndexFile.MatchKey(Buffer);
+      case SearchType of
+        stEqual:        Result := matchRes =  0;
+        stGreater:      Result := (not Eof) and (matchRes <  0);
+        stGreaterEqual: Result := (not Eof) and (matchRes <= 0);
+      end;
     end;
   end;
 end;
@@ -3348,7 +3351,6 @@ function TDbf.InitKeyBuffer(Buffer: PAnsiChar): PAnsiChar;
 begin
   FillChar(Buffer^, RecordSize, 0);
   InitRecord(Buffer);
-  FDbfFile.InitRecordForIndex(Buffer);
   Result := Buffer;
 end;
 
@@ -3361,48 +3363,10 @@ end;
 
 function TDbf.GotoCommon(SearchKeyType: TSearchKeyType): Boolean;
 var
-  checkmatch: Boolean;
-  acceptable: boolean;
-  matchres: integer;
-  UserKey: pchar;
+  Buffer: PAnsiChar;
 begin
-  UserKey := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer);
-  Result  := FIndexFile.SearchKey(UserKey, SearchKeyType);
-  if not Result then
-    Exit;
-
-  checkmatch := False;
-  repeat
-    if ReadCurrentRecord(TempBuffer, acceptable) = grError then
-    begin
-      Result := False;
-      Exit;
-    end;
-    if acceptable then
-      break;
-    checkmatch := True;
-    FCursor.Next;
-  until False;
-
-  if checkmatch then
-  begin
-    matchres := TIndexCursor(FCursor).IndexFile.MatchKey(UserKey);
-    case SearchKeyType of
-      stEqual: Result := matchres = 0;
-      stGreaterEqual: Result := matchres >= 0;
-      stGreater: Result := matchres > 0;
-    end;
-  end;
-
-  CheckBrowseMode;
-  DoBeforeScroll;
-  CursorPosChanged;
-
-  if Result then
-  begin
-    Resync([rmExact, rmCenter]);
-    DoAfterScroll;
-  end;
+  Buffer := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer);
+  Result := SearchKeyBuffer(Buffer, SearchKeyType);
 end;
 
 function TDbf.GotoKey: Boolean;
