@@ -2793,7 +2793,12 @@ var
 begin
   CheckActive;
   lIndexFileName := ParseIndexName(AIndexName);
-  FDbfFile.OpenIndex(lIndexFileName, AFields, true, Options);
+  FDbfFile.OnProgress := FOnProgress;
+  try
+    FDbfFile.OpenIndex(lIndexFileName, AFields, true, Options);
+  finally
+    FDbfFile.OnProgress := FOnProgress;
+  end;
 
   // refresh our indexdefs
   InternalInitFieldDefs;
