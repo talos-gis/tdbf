@@ -339,7 +339,7 @@ type
 
     procedure LockIndex;
     procedure UnlockIndex;
-    function VersionPosition: TFileOffset;
+    function VersionPosition: TPagedFileOffset;
     function ReadVersion(PVersion: PByte): Boolean;
     procedure WriteVersion(PVersion: PByte);
     procedure InvalidError;
@@ -4380,9 +4380,9 @@ begin
   end;
 end;
 
-function TIndexFile.VersionPosition: TFileOffset;
+function TIndexFile.VersionPosition: TPagedFileOffset;
 begin
-  Result := TFileOffset(FMdxTag.HeaderPageNo) * PageSize + Integer(@PIndexHdr(nil)^.Version);
+  Result := TPagedFileOffset(FMdxTag.HeaderPageNo) * PageSize + Integer(@PIndexHdr(nil)^.Version);
 end;
 
 function TIndexFile.ReadVersion(PVersion: PByte): Boolean;

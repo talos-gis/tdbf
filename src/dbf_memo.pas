@@ -70,8 +70,8 @@ type
     procedure SetRecordSize(NewValue: Integer); override;
     procedure SetHeaderSize(NewValue: Integer); override;
 
-    function  LockSection(const Offset: TPagedFileSize; const Length: Cardinal; const Wait: Boolean): Boolean; override;
-    function  UnlockSection(const Offset: TPagedFileSize; const Length: Cardinal): Boolean; override;
+    function  LockSection(const Offset: TPagedFileOffset; const Length: Cardinal; const Wait: Boolean): Boolean; override;
+    function  UnlockSection(const Offset: TPagedFileOffset; const Length: Cardinal): Boolean; override;
 
     function  GetBlockLen: Integer; override;
     function  GetMemoSize: Integer; override;
@@ -512,12 +512,12 @@ begin
   inherited SetHeaderSize(0);
 end;
 
-function  TNullMemoFile.LockSection(const Offset: TPagedFileSize; const Length: Cardinal; const Wait: Boolean): Boolean;
+function  TNullMemoFile.LockSection(const Offset: TPagedFileOffset; const Length: Cardinal; const Wait: Boolean): Boolean;
 begin
   Result := true;
 end;
 
-function  TNullMemoFile.UnlockSection(const Offset: TPagedFileSize; const Length: Cardinal): Boolean;
+function  TNullMemoFile.UnlockSection(const Offset: TPagedFileOffset; const Length: Cardinal): Boolean;
 begin
   Result := true;
 end;
