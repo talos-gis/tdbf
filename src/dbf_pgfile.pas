@@ -224,10 +224,10 @@ begin
     raise EPagedFile.Create(STRING_WRITE_ERROR);
 end;
 {$else}
-procedure SetSize(const NewSize: Int64);
+procedure TPagedFileStream.SetSize(const NewSize: Int64);
 begin
   if not FileTruncate(Handle, NewSize) then
-    raise EPagedFile.Create(SWriteError);
+    raise EPagedFile.Create(STRING_WRITE_ERROR);
 end;
 {$endif}
 
