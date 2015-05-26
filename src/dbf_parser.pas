@@ -708,7 +708,7 @@ begin
   if ResultLen >= 0 then
     Result := ResultLen
   else
-    Result := ExpResultSize;
+    Result := FExpResultSize;
 end;
 
 procedure TDbfParser.SubstituteVariables(var ExprRec: PExpressionRec);

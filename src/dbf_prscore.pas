@@ -53,7 +53,6 @@ type
     FCurrentRec: PExpressionRec;
     FExpResult: PAnsiChar; // was PChar;
     FExpResultPos: PAnsiChar; // was PChar;
-    FExpResultSize: Integer;
 
     procedure ParseString(AnExpression: string; DestCollection: TExprCollection);
     function  MakeTree(Expr: TExprCollection; FirstItem, LastItem: Integer): PExpressionRec;
@@ -65,6 +64,7 @@ type
     function ResultCanVary(ExprRec: PExpressionRec): Boolean;
   protected
     FExpressionContext: TExpressionContext;
+    FExpResultSize: Integer;
     FWordsList: TSortedCollection;
 
     function MakeRec: PExpressionRec; virtual;
@@ -116,7 +116,6 @@ type
     property ArgSeparator: Char read FArgSeparator write FArgSeparator;
     property Optimize: Boolean read FOptimize write FOptimize;
     property ResultType: TExpressionType read GetResultType;
-    property ExpResultSize: Integer read fExpResultSize;
 
     //if optimize is selected, constant expressions are tried to remove
     //such as: 4*4*x is evaluated as 16*x and exp(1)-4*x is repaced by 2.17 -4*x
