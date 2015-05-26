@@ -184,7 +184,6 @@ procedure FuncDiv_F_LL(Param: PExpressionRec);
 procedure FuncDiv_F_LF(Param: PExpressionRec);
 procedure FuncDiv_F_LI(Param: PExpressionRec);
 {$endif}
-procedure FuncSoundex(Param: PExpressionRec);
 procedure FuncStrI_EQ(Param: PExpressionRec);
 procedure FuncStrI_NEQ(Param: PExpressionRec);
 procedure FuncStrI_LT(Param: PExpressionRec);
@@ -2223,6 +2222,28 @@ begin
   end;
 end;
 
+procedure FuncVal(Param: PExpressionRec);
+var
+  Index: Integer;
+  TempStr: string;
+  Code: Integer;
+begin
+  TempStr := TrimLeft(Param^.Args[0]);
+  Index := 0;
+{$BOOLEVAL OFF}
+  while (Index<Length(TempStr)) and (TempStr[Succ(Index)] in [DBF_ZERO..DBF_NINE, DBF_POSITIVESIGN, DBF_NEGATIVESIGN, DBF_DECIMAL]) do
+    Inc(Index);
+{$BOOLEVAL ON}
+  SetLength(TempStr, Index);
+  case Param^.ExprWord.ResultType of
+    etFloat: Val(TempStr, PDouble(Param^.Res.MemoryPos^)^, Code);
+    etInteger: Val(TempStr, PInteger(Param^.Res.MemoryPos^)^, Code);
+{$ifdef SUPPORT_INT64}
+    etLargeInt: Val(TempStr, PLargeInt(Param^.Res.MemoryPos^)^, Code);
+{$endif}
+  end;
+end;
+
 initialization
 
   DbfWordsGeneralList := TExpressList.Create;
@@ -2354,29 +2375,32 @@ initialization
     Add(TFunction.CreateOper('OR',  'BB', etBoolean, Func_OR, 100));
 
     // Functions - name, description, param types, min params, result type, Func addr
-//  Add(TFunction.Create('STR',       '',      'FII', 1, etString, FuncFloatToStr, ''));
-//  Add(TFunction.Create('STR',       '',      'III', 1, etString, FuncIntToStr, ''));
-//  Add(TFunction.Create('STR',       '',      'LII', 1, etString, FuncInt64ToStr, ''));
-    Add(TFunction.Create('STR',       '',      'FIIS',1, etString, FuncStr,       ''));
-    Add(TFunction.Create('STR',       '',      'IIIS',1, etString, FuncStr,       ''));
-    Add(TFunction.Create('STR',       '',      'LIIS',1, etString, FuncStr,       ''));
-    Add(TFunction.Create('DTOS',      '',      'D',   1, etString, FuncDateToStr, ''));
-    Add(TFunction.Create('SUBSTR',    'SUBS',  'SII', 3, etString, FuncSubString, ''));
-    Add(TFunction.Create('SUBSTR',    'SUBS',  'SI',  2, etString, FuncSubString, ''));
-    Add(TFunction.Create('LEFT',      'LEFT',  'SI',  2, etString, FuncLeftString, ''));
-    Add(TFunction.Create('UPPERCASE', 'UPPER', 'S',   1, etString, FuncUppercase, ''));
-    Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString, FuncLowercase, ''));
+//  Add(TFunction.Create('STR',       '',      'FII', 1, etString,   FuncFloatToStr, ''));
+//  Add(TFunction.Create('STR',       '',      'III', 1, etString,   FuncIntToStr, ''));
+//  Add(TFunction.Create('STR',       '',      'LII', 1, etString,   FuncInt64ToStr, ''));
+    Add(TFunction.Create('STR',       '',      'FIIS',1, etString,   FuncStr,       ''));
+    Add(TFunction.Create('STR',       '',      'IIIS',1, etString,   FuncStr,       ''));
+    Add(TFunction.Create('STR',       '',      'LIIS',1, etString,   FuncStr,       ''));
+    Add(TFunction.Create('DTOS',      '',      'D',   1, etString,   FuncDateToStr, ''));
+    Add(TFunction.Create('SUBSTR',    'SUBS',  'SII', 3, etString,   FuncSubString, ''));
+    Add(TFunction.Create('SUBSTR',    'SUBS',  'SI',  2, etString,   FuncSubString, ''));
+    Add(TFunction.Create('LEFT',      'LEFT',  'SI',  2, etString,   FuncLeftString, ''));
+    Add(TFunction.Create('UPPERCASE', 'UPPER', 'S',   1, etString,   FuncUppercase, ''));
+    Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString,   FuncLowercase, ''));
 
     // More functions
-    Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,FuncEmpty,      ''));
-    Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,FuncEmpty,      ''));
-    Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,  FuncEmpty,      ''));
     {$ifdef SUPPORT_INT64}
-    Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,  FuncEmpty,      ''));
     {$endif}
-    Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,FuncEmpty,      ''));
-    Add(TFunction.Create('PROPER',    '',      'S',   1, etString, FuncProper,     ''));
-    Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString, FuncSoundex,    ''));
+    Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
+    Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString,   FuncSoundex,    ''));
+    Add(TFunction.Create('VAL',       '',      'S',   1, etFloat,    FuncVal,        ''));
+    Add(TFunction.Create('VAL',       '',      'S',   1, etInteger,  FuncVal,        ''));
+    Add(TFunction.Create('VAL',       '',      'S',   1, etLargeInt, FuncVal,       ''));
 end;
 
   with DbfWordsInsensGeneralList do

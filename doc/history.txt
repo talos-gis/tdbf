@@ -131,6 +131,7 @@ following changes thx paulenandrew:
 - evaluate operators with equal precedence from left to right
 - add Empty() function to parser
 - add Proper() function to parser
+- add Val() function to parser
 
 ------------------------
 V6.9.1
