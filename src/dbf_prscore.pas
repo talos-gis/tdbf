@@ -2172,7 +2172,7 @@ procedure FuncChr(Param: PExpressionRec);
 var
   IntValue: Integer;
 begin
-  if Param^.ExpressionContext.Validating then
+  if Param^.ExpressionContext^.ValidatingIndex then
     IntValue:= Ord(' ')
   else
     IntValue := PInteger(Param^.Args[0])^;
@@ -2191,6 +2191,19 @@ begin
   end;
 end;
 
+procedure FuncLTrim(Param: PExpressionRec);
+var
+  TempStr: string;
+begin
+  if Param^.ExpressionContext^.ValidatingIndex then
+    Param^.Res.Append(Param^.Args[0], dbfStrLen(Param^.Args[0]))
+  else
+  begin
+    TempStr := TrimLeft(Param^.Args[0]);
+    Param^.Res.Append(PChar(TempStr), Length(TempStr));
+  end;
+end;
+
 procedure FuncProper(Param: PExpressionRec);
 var
   P: PChar;
@@ -2200,7 +2213,7 @@ var
   Buffer: array[0..1] of Char;
 begin
   P := Param^.Args[0];
-  Len := StrLen(P);
+  Len := dbfStrLen(P);
   NewWord := True;
   Buffer[1]:= #0;
   for Index:= 1 to Len do
@@ -2221,6 +2234,19 @@ begin
     Inc(P);
   end;
   Param^.Res.Append(Param^.Args[0], Len);
+end;
+
+procedure FuncRTrim(Param: PExpressionRec);
+var
+  TempStr: string;
+begin
+  if Param^.ExpressionContext^.ValidatingIndex then
+    Param^.Res.Append(Param^.Args[0], dbfStrLen(Param^.Args[0]))
+  else
+  begin
+    TempStr := TrimRight(Param^.Args[0]);
+    Param^.Res.Append(pchar(TempStr), Length(TempStr));
+  end;
 end;
 
 {$I dbf_soundex.inc}
@@ -2412,8 +2438,11 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,  FuncEmpty,      ''));
     {$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
+    Add(TFunction.Create('RTRIM',     '',      'S',   1, etString,   FuncRTrim,      ''));
     Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString,   FuncSoundex,    ''));
+    Add(TFunction.Create('TRIM',      '',      'S',   1, etString,   FuncRTrim,      ''));
     Add(TFunction.Create('VAL',       '',      'S',   1, etFloat,    FuncVal,        ''));
     Add(TFunction.Create('VAL',       '',      'S',   1, etInteger,  FuncVal,        ''));
     Add(TFunction.Create('VAL',       '',      'S',   1, etLargeInt, FuncVal,       ''));

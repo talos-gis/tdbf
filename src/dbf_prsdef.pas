@@ -57,7 +57,7 @@ type
   end;
 
   TExpressionContext = record
-    Validating: Boolean;
+    ValidatingIndex: Boolean;
   end;
   PExpressionContext = ^TExpressionContext;
 

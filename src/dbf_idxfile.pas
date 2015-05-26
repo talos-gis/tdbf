@@ -1782,11 +1782,11 @@ begin
     GetMem(TempBuffer, TDbfFile(DbfFile).RecordSize);
     try
       TDbfFile(DbfFile).InitRecord(TempBuffer);
-      FExpressionContext.Validating := True;
+      FExpressionContext.ValidatingIndex := True;
       try
         FResultLen := dbfStrLen(ExtractFromBuffer(TempBuffer));
       finally
-        FExpressionContext.Validating := False;
+        FExpressionContext.ValidatingIndex := False;
       end;
     finally
       FreeMem(TempBuffer);
