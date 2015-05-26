@@ -954,11 +954,9 @@ end;
 
 procedure TExpressList.FreeItem(Item: Pointer);
 begin
+  FShortList.Remove(Item);
   if InterlockedDecrement(TExprWord(Item).FRefCount) = 0 then
-  begin
-    FShortList.Remove(Item);
     inherited;
-  end;
 end;
 
 function TExpressList.Search(Key: Pointer; var Index: Integer): Boolean;
