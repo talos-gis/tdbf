@@ -1579,24 +1579,34 @@ begin
 end;
 {$endif}
 
+procedure FuncAddSub_CheckNull(Param: PExpressionRec);
+begin
+  if (Param^.ArgList[0]^.IsNullPtr^) and (Param^.ArgList[1]^.IsNullPtr^) then
+    Param^.IsNull := True;
+end;
+
 procedure FuncAdd_F_FF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ + PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_FI(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ + PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_II(Param: PExpressionRec);
 begin
   PInteger(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ + PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_IF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ + PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 {$ifdef SUPPORT_INT64}
@@ -1604,26 +1614,31 @@ end;
 procedure FuncAdd_F_FL(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ + PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_IL(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ + PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_LL(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ + PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_LF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ + PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncAdd_F_LI(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ + PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 {$endif}
@@ -1631,21 +1646,25 @@ end;
 procedure FuncSub_F_FF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ - PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_FI(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ - PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_II(Param: PExpressionRec);
 begin
   PInteger(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ - PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_IF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ - PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 {$ifdef SUPPORT_INT64}
@@ -1653,26 +1672,31 @@ end;
 procedure FuncSub_F_FL(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ - PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_IL(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ - PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_LL(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ - PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_LF(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ - PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 procedure FuncSub_F_LI(Param: PExpressionRec);
 begin
   PInt64(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ - PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
 end;
 
 {$endif}
@@ -2311,6 +2335,42 @@ begin
   end;
 end;
 
+procedure FuncAdd_D_DF(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ + PDouble(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
+procedure FuncAdd_D_DI(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ + PInteger(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
+procedure FuncAdd_D_DL(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ + PInt64(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
+procedure FuncAdd_D_FD(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ + PDateTime(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
+procedure FuncAdd_D_ID(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ + PDateTime(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
+procedure FuncAdd_D_LD(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PInt64(Param^.Args[0])^ + PDateTime(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
 procedure FuncAdd_S(Param: PExpressionRec);
 begin
   FuncConcatenate_S(Param, True);
@@ -2629,6 +2689,20 @@ initialization
     Add(TFunction.CreateOper('+', 'LL', etLargeInt, FuncAdd_F_LI, 40));
     Add(TFunction.CreateOper('+', 'LI', etLargeInt, FuncAdd_F_LL, 40));
 {$endif}
+    Add(TFunction.CreateOper('+', 'DF', etDateTime, FuncAdd_D_DF, 40));
+    Add(TFunction.CreateOper('+', 'DI', etDateTime, FuncAdd_D_DI, 40));
+    Add(TFunction.CreateOper('+', 'DL', etDateTime, FuncAdd_D_DL, 40));
+    Add(TFunction.CreateOper('+', 'FD', etDateTime, FuncAdd_D_FD, 40));
+    Add(TFunction.CreateOper('+', 'ID', etDateTime, FuncAdd_D_ID, 40));
+    Add(TFunction.CreateOper('+', 'LD', etDateTime, FuncAdd_D_LD, 40));
+    Add(TFunction.CreateOper('+', 'DS', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'FS', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'IS', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'LS', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'SD', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'SF', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'SI', etString,   FuncAdd_S,    40));
+    Add(TFunction.CreateOper('+', 'SL', etString,   FuncAdd_S,    40));
     Add(TFunction.CreateOper('-', 'FF', etFloat,    FuncSub_F_FF, 40));
     Add(TFunction.CreateOper('-', 'FI', etFloat,    FuncSub_F_FI, 40));
     Add(TFunction.CreateOper('-', 'IF', etFloat,    FuncSub_F_IF, 40));
