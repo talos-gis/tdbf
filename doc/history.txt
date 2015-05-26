@@ -143,6 +143,7 @@ following changes thx paulenandrew:
 - add Ceil(), Ceiling(), Round() functions to parser
 - fix index parser to be case sensitive
 - add RecNo() function to parser
+- make native field information available in parser
 
 ------------------------
 V6.9.1

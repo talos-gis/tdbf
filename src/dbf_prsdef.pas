@@ -243,15 +243,27 @@ type
     property Value: Boolean read FValue write FValue;
   end;
 
+  TVariableFieldInfo = record
+    DbfFieldDef: Pointer;
+    NativeFieldType: Char;
+    Size: Integer;
+    Precision: Integer;
+  end;
+  PVariableFieldInfo = ^TVariableFieldInfo;
+
   TVariable = class(TExprWord)
   private
     FResultType: TExpressionType;
+    FFieldInfo: TVariableFieldInfo;
+    FFieldInfoValid: Boolean;
+    function GetFieldInfo: PVariableFieldInfo;
   protected
     function GetCanVary: Boolean; override;
     function GetResultType: TExpressionType; override;
   public
 //  constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc);
-    constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
+    property FieldInfo: PVariableFieldInfo read GetFieldInfo;
   end;
 
   TFloatVariable = class(TVariable)
@@ -259,9 +271,9 @@ type
     FValue: PDouble;
   public
 //  constructor Create(AName: string; AValue: PDouble);
-    constructor Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 
-    function AsPointer: PAnsiChar; override; // Was PChar
+    function AsPointer: PChar; override;
   end;
 
   TStringVariable = class(TVariable)
@@ -273,10 +285,10 @@ type
     procedure SetFixedLen(NewLen: integer); override;
   public
 //  constructor Create(AName: string; AValue: PPAnsiChar); // Was PPChar
-    constructor Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 
     function LenAsPointer: PInteger; override;
-    function AsPointer: PAnsiChar; override; // Was PChar
+    function AsPointer: PChar; override;
 
     property FixedLen: Integer read FFixedLen;
   end;
@@ -286,7 +298,7 @@ type
     FValue: PDateTimeRec;
   public
 //  constructor Create(AName: string; AValue: PDateTimeRec);
-    constructor Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -296,7 +308,7 @@ type
     FValue: PInteger;
   public
 //  constructor Create(AName: string; AValue: PInteger);
-    constructor Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
 
@@ -307,7 +319,7 @@ type
     FValue: PLargeInt;
   public
 //  constructor Create(AName: string; AValue: PLargeInt);
-    constructor Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -319,9 +331,9 @@ type
     FValue: PBoolean;
   public
 //  constructor Create(AName: string; AValue: PBoolean);
-    constructor Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean);
+    constructor Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 
-    function AsPointer: PAnsiChar; override; // Was PChar
+    function AsPointer: PChar; override;
   end;
 
   TLeftBracket = class(TExprWord)
@@ -746,11 +758,16 @@ end;
 
 { TVariable }
 
-constructor TVariable.Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean);
+constructor TVariable.Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
   inherited Create(AName, AExprFunc, AIsNullPtr);
 
   FResultType := AVarType;
+  if Assigned(AFieldInfo) then
+  begin
+    FFieldInfo := AFieldInfo^;
+    FFieldInfoValid := True;
+  end
 end;
 
 function TVariable.GetCanVary: Boolean;
@@ -763,11 +780,19 @@ begin
   Result := FResultType;
 end;
 
+function TVariable.GetFieldInfo: PVariableFieldInfo;
+begin
+  if FFieldInfoValid then
+    Result := @FFieldInfo
+  else
+    Result := nil;
+end;
+
 { TFloatVariable }
 
-constructor TFloatVariable.Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean);
+constructor TFloatVariable.Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
-  inherited Create(AName, etFloat, _FloatVariable, AIsNullPtr);
+  inherited Create(AName, etFloat, _FloatVariable, AIsNullPtr, AFieldInfo);
   FValue := AValue;
 end;
 
@@ -778,10 +803,10 @@ end;
 
 { TStringVariable }
 
-constructor TStringVariable.Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean); // Was PPChar
+constructor TStringVariable.Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo); // Was PPChar
 begin
   // variable or fixed length?
-  inherited Create(AName, etString, _StringVariable, AIsNullPtr);
+  inherited Create(AName, etString, _StringVariable, AIsNullPtr, AFieldInfo);
 
   // store pointer to string
   FValue := AValue;
@@ -810,9 +835,9 @@ end;
 
 { TDateTimeVariable }
 
-constructor TDateTimeVariable.Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean);
+constructor TDateTimeVariable.Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
-  inherited Create(AName, etDateTime, _DateTimeVariable, AIsNullPtr);
+  inherited Create(AName, etDateTime, _DateTimeVariable, AIsNullPtr, AFieldInfo);
   FValue := AValue;
 end;
 
@@ -823,9 +848,9 @@ end;
 
 { TIntegerVariable }
 
-constructor TIntegerVariable.Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean);
+constructor TIntegerVariable.Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
-  inherited Create(AName, etInteger, _IntegerVariable, AIsNullPtr);
+  inherited Create(AName, etInteger, _IntegerVariable, AIsNullPtr, AFieldInfo);
   FValue := AValue;
 end;
 
@@ -838,9 +863,9 @@ end;
 
 { TLargeIntVariable }
 
-constructor TLargeIntVariable.Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean);
+constructor TLargeIntVariable.Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
-  inherited Create(AName, etLargeInt, _LargeIntVariable, AIsNullPtr);
+  inherited Create(AName, etLargeInt, _LargeIntVariable, AIsNullPtr, AFieldInfo);
   FValue := AValue;
 end;
 
@@ -853,9 +878,9 @@ end;
 
 { TBooleanVariable }
 
-constructor TBooleanVariable.Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean);
+constructor TBooleanVariable.Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo);
 begin
-  inherited Create(AName, etBoolean, _BooleanVariable, AIsNullPtr);
+  inherited Create(AName, etBoolean, _BooleanVariable, AIsNullPtr, AFieldInfo);
   FValue := AValue;
 end;
 
