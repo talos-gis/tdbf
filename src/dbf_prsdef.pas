@@ -70,6 +70,8 @@ type
     ArgsSize: array[0..MaxArg-1] of Integer;
     ArgsType: array[0..MaxArg-1] of TExpressionType;
     ArgList: array[0..MaxArg-1] of PExpressionRec;
+    IsNull: Boolean;
+    IsNullPtr: PBoolean;
   end;
 
   TExprCollection = class(TNoOwnerCollection)
@@ -99,6 +101,8 @@ type
   private
     FName: string;
     FExprFunc: TExprFunc;
+    FIsNull: Boolean;
+    FIsNullPtr: PBoolean;
   protected
     FRefCount: Integer;
 
@@ -115,7 +119,8 @@ type
     function GetShortName: string; virtual;
     procedure SetFixedLen(NewLen: integer); virtual;
   public
-    constructor Create(AName: string; AExprFunc: TExprFunc);
+    constructor Create(AName: string; AExprFunc: TExprFunc); overload;
+    constructor Create(AName: string; AExprFunc: TExprFunc; AIsNullPtr: PBoolean); overload;
 
     function LenAsPointer: PInteger; virtual;
     function AsPointer: PAnsiChar; virtual; // Was PChar
@@ -134,6 +139,7 @@ type
     property ShortName: string read GetShortName;
     property Description: string read GetDescription;
     property TypeSpec: string read GetTypeSpec;
+    property IsNullPtr: PBoolean read FIsNullPtr;
   end;
 
   TExpressShortList = class(TSortedCollection)
@@ -237,14 +243,16 @@ type
     function GetCanVary: Boolean; override;
     function GetResultType: TExpressionType; override;
   public
-    constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc);
+//  constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc);
+    constructor Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean);
   end;
 
   TFloatVariable = class(TVariable)
   private
     FValue: PDouble;
   public
-    constructor Create(AName: string; AValue: PDouble);
+//  constructor Create(AName: string; AValue: PDouble);
+    constructor Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -257,7 +265,8 @@ type
     function GetFixedLen: Integer; override;
     procedure SetFixedLen(NewLen: integer); override;
   public
-    constructor Create(AName: string; AValue: PPAnsiChar); // Was PPChar
+//  constructor Create(AName: string; AValue: PPAnsiChar); // Was PPChar
+    constructor Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean);
 
     function LenAsPointer: PInteger; override;
     function AsPointer: PAnsiChar; override; // Was PChar
@@ -269,7 +278,8 @@ type
   private
     FValue: PDateTimeRec;
   public
-    constructor Create(AName: string; AValue: PDateTimeRec);
+//  constructor Create(AName: string; AValue: PDateTimeRec);
+    constructor Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -278,8 +288,8 @@ type
   private
     FValue: PInteger;
   public
-    constructor Create(AName: string; AValue: PInteger);
-
+//  constructor Create(AName: string; AValue: PInteger);
+    constructor Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean);
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
 
@@ -289,7 +299,8 @@ type
   private
     FValue: PLargeInt;
   public
-    constructor Create(AName: string; AValue: PLargeInt);
+//  constructor Create(AName: string; AValue: PLargeInt);
+    constructor Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -300,7 +311,8 @@ type
   private
     FValue: PBoolean;
   public
-    constructor Create(AName: string; AValue: PBoolean);
+//  constructor Create(AName: string; AValue: PBoolean);
+    constructor Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean);
 
     function AsPointer: PAnsiChar; override; // Was PChar
   end;
@@ -473,8 +485,18 @@ end;
 
 constructor TExprWord.Create(AName: string; AExprFunc: TExprFunc);
 begin
+  Create(AName, AExprFunc, nil);
+end;
+
+constructor TExprWord.Create(AName: string; AExprFunc: TExprFunc; AIsNullPtr: PBoolean);
+begin
   FName := AName;
   FExprFunc := AExprFunc;
+
+  if Assigned(AIsNullPtr) then
+    FIsNullPtr := AIsNullPtr
+  else
+    FIsNullPtr := @FIsNull;
 end;
 
 function TExprWord.GetCanVary: Boolean;
@@ -706,9 +728,9 @@ end;
 
 { TVariable }
 
-constructor TVariable.Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc);
+constructor TVariable.Create(AName: string; AVarType: TExpressionType; AExprFunc: TExprFunc; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, AExprFunc);
+  inherited Create(AName, AExprFunc, AIsNullPtr);
 
   FResultType := AVarType;
 end;
@@ -725,9 +747,9 @@ end;
 
 { TFloatVariable }
 
-constructor TFloatVariable.Create(AName: string; AValue: PDouble);
+constructor TFloatVariable.Create(AName: string; AValue: PDouble; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, etFloat, _FloatVariable);
+  inherited Create(AName, etFloat, _FloatVariable, AIsNullPtr);
   FValue := AValue;
 end;
 
@@ -738,10 +760,10 @@ end;
 
 { TStringVariable }
 
-constructor TStringVariable.Create(AName: string; AValue: PPAnsiChar); // Was PPChar
+constructor TStringVariable.Create(AName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean); // Was PPChar
 begin
   // variable or fixed length?
-  inherited Create(AName, etString, _StringVariable);
+  inherited Create(AName, etString, _StringVariable, AIsNullPtr);
 
   // store pointer to string
   FValue := AValue;
@@ -770,9 +792,9 @@ end;
 
 { TDateTimeVariable }
 
-constructor TDateTimeVariable.Create(AName: string; AValue: PDateTimeRec);
+constructor TDateTimeVariable.Create(AName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, etDateTime, _DateTimeVariable);
+  inherited Create(AName, etDateTime, _DateTimeVariable, AIsNullPtr);
   FValue := AValue;
 end;
 
@@ -783,9 +805,9 @@ end;
 
 { TIntegerVariable }
 
-constructor TIntegerVariable.Create(AName: string; AValue: PInteger);
+constructor TIntegerVariable.Create(AName: string; AValue: PInteger; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, etInteger, _IntegerVariable);
+  inherited Create(AName, etInteger, _IntegerVariable, AIsNullPtr);
   FValue := AValue;
 end;
 
@@ -798,9 +820,9 @@ end;
 
 { TLargeIntVariable }
 
-constructor TLargeIntVariable.Create(AName: string; AValue: PLargeInt);
+constructor TLargeIntVariable.Create(AName: string; AValue: PLargeInt; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, etLargeInt, _LargeIntVariable);
+  inherited Create(AName, etLargeInt, _LargeIntVariable, AIsNullPtr);
   FValue := AValue;
 end;
 
@@ -813,9 +835,9 @@ end;
 
 { TBooleanVariable }
 
-constructor TBooleanVariable.Create(AName: string; AValue: PBoolean);
+constructor TBooleanVariable.Create(AName: string; AValue: PBoolean; AIsNullPtr: PBoolean);
 begin
-  inherited Create(AName, etBoolean, _BooleanVariable);
+  inherited Create(AName, etBoolean, _BooleanVariable, AIsNullPtr);
   FValue := AValue;
 end;
 

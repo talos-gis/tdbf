@@ -126,6 +126,7 @@ following changes thx paulenandrew:
 - do not convert index expression to upper case
 - treat level 7 null value the same as an empty value when comparing Character (C) index keys (consistent with BDE)
 - add more robust Str() function to parser
+- add concept of null value to parser, use it to implement DTOS(null) = null instead of "18991230"
 
 ------------------------
 V6.9.1

@@ -3368,6 +3368,7 @@ function TIndexFile.ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
 var
   KeyBuffer: PAnsiChar;
   DbfFieldDef: TDbfFieldDef;
+  IsNull: Boolean;
 begin
   // execute expression to get key
   if KeyType in ['@', 'O', 'I', '+'] then
@@ -3380,8 +3381,10 @@ begin
   end
   else
   begin
-    KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
-    if (KeyType = 'D') and (FCurrentParser.ExtractIsNull(Buffer)) then
+//  KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
+    KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer, IsNull);
+//  if (KeyType = 'D') and (FCurrentParser.ExtractIsNull(Buffer)) then
+    if (KeyType = 'D') and IsNull then
       PDouble(KeyBuffer)^ := 1E100;
     Result := PrepareKey(KeyBuffer, FCurrentParser.ResultType);
   end;

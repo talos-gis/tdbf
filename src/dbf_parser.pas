@@ -10,7 +10,9 @@ uses
 {$ifdef KYLIX}
   Libc,
 {$endif}
-{$ifndef WINDOWS}
+{$ifdef WINDOWS}
+  Windows,
+{$else}
   dbf_wtil,
 {$endif}
   db,
@@ -56,8 +58,8 @@ type
     procedure ClearExpressions; override;
 
     procedure ParseExpression(AExpression: string); virtual;
-    function ExtractFromBuffer(Buffer: PAnsiChar): PAnsiChar; virtual;
-    function ExtractIsNull(Buffer: PAnsiChar): Boolean;
+    function ExtractFromBuffer(Buffer: PChar): PAnsiChar; overload; virtual;
+    function ExtractFromBuffer(Buffer: PChar; var IsNull: Boolean): PAnsiChar; overload; virtual;
 
     property DbfFile: Pointer read FDbfFile write FDbfFile;
     property Expression: string read FCurrentExpression;
@@ -74,11 +76,7 @@ implementation
 uses
   dbf,
   dbf_dbffile,
-  dbf_str
-{$ifdef WINDOWS}
-  ,Windows
-{$endif}
-  ;
+  dbf_str;
 
 type
 // TFieldVar aids in retrieving field values from records
@@ -90,6 +88,8 @@ type
     FDbfFile: TDbfFile;
     FFieldName: AnsiString;
     FExprWord: TExprWord;
+    FIsNull: Boolean;
+    FIsNullPtr: PBoolean;
   protected
     function GetFieldVal: Pointer; virtual; abstract;
     function GetFieldType: TExpressionType; virtual; abstract;
@@ -106,6 +106,7 @@ type
     property FieldType: TExpressionType read GetFieldType;
     property DbfFile: TDbfFile read FDbfFile;
     property FieldName: AnsiString read FFieldName;
+    property IsNullPtr: PBoolean read FIsNullPtr;
   end;
 
   TStringFieldVar = class(TFieldVar)
@@ -189,6 +190,7 @@ begin
   FFieldDef := UseFieldDef;
   FDbfFile := ADbfFile;
   FFieldName := UseFieldDef.FieldName;
+  FIsNullPtr := @FIsNull;
 end;
 
 procedure TFieldVar.SetExprWord(NewExprWord: TExprWord);
@@ -238,6 +240,7 @@ begin
     FFieldVal[Len] := #0;
   end else
     FFieldVal := Src;
+  FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, nil, False);
 end;
 
 procedure TStringFieldVar.SetExprWord(NewExprWord: TExprWord);
@@ -279,7 +282,9 @@ end;
 procedure TFloatFieldVar.Refresh(Buffer: PAnsiChar);
 begin
   // database width is default 64-bit double
-  if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
+//if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
+  FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, False);
+  if FIsNull then
     FFieldVal := 0.0;
 end;
 
@@ -296,8 +301,11 @@ end;
 
 procedure TIntegerFieldVar.Refresh(Buffer: PAnsiChar);
 begin
-  FFieldVal := 0;
-  FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false);
+//FFieldVal := 0;
+//FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false);
+  FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, False);
+  if FIsNull then
+    FFieldVal := 0;
 end;
 
 {$ifdef SUPPORT_INT64}
@@ -316,6 +324,9 @@ end;
 procedure TLargeIntFieldVar.Refresh(Buffer: PAnsiChar);
 begin
   if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
+//if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
+  FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, False);
+  if FIsNull then
     FFieldVal := 0;
 end;
 
@@ -334,7 +345,9 @@ end;
 
 procedure TDateTimeFieldVar.Refresh(Buffer: PAnsiChar);
 begin
-  if not FDbfFile.GetFieldDataFromDef(FieldDef, ftDateTime, Buffer, @FFieldVal, false) then
+//if not FDbfFile.GetFieldDataFromDef(FieldDef, ftDateTime, Buffer, @FFieldVal, false) then
+  FIsNull:= not FDbfFile.GetFieldDataFromDef(FieldDef, ftDateTime, Buffer, @FFieldVal, False);
+  if FIsNull then
     FFieldVal.DateTime := 0.0;
 end;
 
@@ -353,10 +366,15 @@ procedure TBooleanFieldVar.Refresh(Buffer: PAnsiChar);
 var
   lFieldVal: word;
 begin
-  if FDbfFile.GetFieldDataFromDef(FieldDef, ftBoolean, Buffer, @lFieldVal, false) then
-    FFieldVal := lFieldVal <> 0
+//if FDbfFile.GetFieldDataFromDef(FieldDef, ftBoolean, Buffer, @lFieldVal, false) then
+//  FFieldVal := lFieldVal <> 0
+//else
+//  FFieldVal := false;
+  FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, ftBoolean, Buffer, @lFieldVal, False);
+  if FIsNull then
+    FFieldVal := False
   else
-    FFieldVal := false;
+    FFieldVal := lFieldVal <> 0;
 end;
 
 //--TDbfParser---------------------------------------------------------------
@@ -490,36 +508,42 @@ begin
     ftString:
       begin
         TempFieldVar := TStringFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.FExprWord := DefineStringVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.FExprWord := DefineStringVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.FExprWord := DefineStringVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
         TStringFieldVar(TempFieldVar).FRawStringField := not FRawStringFields; // lsp, force update !!!
         TStringFieldVar(TempFieldVar).RawStringField := FRawStringFields;
       end;
     ftBoolean:
       begin
         TempFieldVar := TBooleanFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.ExprWord := DefineBooleanVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.ExprWord := DefineBooleanVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.ExprWord := DefineBooleanVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
       end;
     ftFloat:
       begin
         TempFieldVar := TFloatFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.ExprWord := DefineFloatVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.ExprWord := DefineFloatVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.ExprWord := DefineFloatVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
       end;
     ftAutoInc, ftInteger, ftSmallInt:
       begin
         TempFieldVar := TIntegerFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.ExprWord := DefineIntegerVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.ExprWord := DefineIntegerVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.ExprWord := DefineIntegerVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
       end;
 {$ifdef SUPPORT_INT64}
     ftLargeInt:
       begin
         TempFieldVar := TLargeIntFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.ExprWord := DefineLargeIntVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.ExprWord := DefineLargeIntVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.ExprWord := DefineLargeIntVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
       end;
 {$endif}
     ftDate, ftDateTime:
       begin
         TempFieldVar := TDateTimeFieldVar.Create(FieldInfo, TDbfFile(FDbfFile));
-        TempFieldVar.ExprWord := DefineDateTimeVariable(VarName, TempFieldVar.FieldVal);
+//      TempFieldVar.ExprWord := DefineDateTimeVariable(VarName, TempFieldVar.FieldVal);
+        TempFieldVar.ExprWord := DefineDateTimeVariable(VarName, TempFieldVar.FieldVal, TempFieldVar.IsNullPtr);
       end;
   else
     raise EParserException.CreateFmt(STRING_INDEX_BASED_ON_INVALID_FIELD, [VarName]);
@@ -586,6 +610,13 @@ end;
 
 function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar): PAnsiChar;
 var
+  IsNull: Boolean;
+begin
+  Result := ExtractFromBuffer(Buffer, IsNull);
+end;
+
+function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar; var IsNull: Boolean): PAnsiChar;
+var
   I: Integer;
 begin
   // prepare all field variables
@@ -598,25 +629,17 @@ begin
     // execute expression
     EvaluateCurrent;
     Result := PAnsiChar(ExpResult);
+    if Assigned(CurrentRec) then
+      IsNull := LastRec.IsNullPtr^
+    else
+      IsNull := False;
   end else begin
     // simple field, get field result
     Result := TFieldVar(FFieldVarList.Objects[0]).FieldVal;
     // if string then dereference
     if FFieldType = etString then
       Result := PAnsiChar(PPAnsiChar(Result)^); // Was PPChar
-  end;
-end;
-
-function TDbfParser.ExtractIsNull(Buffer: PAnsiChar): Boolean;
-var
-  FieldVar: TFieldVar;
-begin
-  if FIsExpression then
-    Result := False
-  else
-  begin
-    FieldVar := TFieldVar(FFieldVarList.Objects[0]);
-    Result := not FieldVar.DbfFile.GetFieldDataFromDef(FieldVar.FieldDef, FieldVar.FieldDef.FieldType, Buffer, nil, True);
+    IsNull := TFieldVar(FFieldVarList.Objects[0]).IsNullPtr^;
   end;
 end;
 

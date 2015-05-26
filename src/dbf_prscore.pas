@@ -86,15 +86,21 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    function DefineFloatVariable(AVarName: string; AValue: PDouble): TExprWord;
-    function DefineIntegerVariable(AVarName: string; AValue: PInteger): TExprWord;
-//    procedure DefineSmallIntVariable(AVarName: string; AValue: PSmallInt);
+//  function DefineFloatVariable(AVarName: string; AValue: PDouble): TExprWord;
+    function DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean): TExprWord;
+//  function DefineIntegerVariable(AVarName: string; AValue: PInteger): TExprWord;
+    function DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean): TExprWord;
+//  procedure DefineSmallIntVariable(AVarName: string; AValue: PSmallInt);
 {$ifdef SUPPORT_INT64}
-    function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt): TExprWord;
+//  function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt): TExprWord;
+    function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean): TExprWord;
 {$endif}
-    function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec): TExprWord;
-    function DefineBooleanVariable(AVarName: string; AValue: PBoolean): TExprWord;
-    function DefineStringVariable(AVarName: string; AValue: PPAnsiChar): TExprWord; // Was PPChar
+//  function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec): TExprWord;
+    function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean): TExprWord;
+//  function DefineBooleanVariable(AVarName: string; AValue: PBoolean): TExprWord;
+    function DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean): TExprWord;
+//  function DefineStringVariable(AVarName: string; AValue: PPAnsiChar): TExprWord; // Was PPChar
+    function DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean): TExprWord; // Was PPChar
     function DefineFunction(AFunctName, AShortName, ADescription, ATypeSpec: string;
         AMinFunctionArg: Integer; AResultType: TExpressionType; AFuncAddress: TExprFunc): TExprWord;
     procedure Evaluate(AnExpression: string);
@@ -272,7 +278,10 @@ begin
       ExprRec^.Args[0] := ExprRec^.ExprWord.AsPointer;
       // store length as second parameter
       ExprRec^.Args[1] := PAnsiChar(ExprRec^.ExprWord.LenAsPointer); // Was PChar
-    end;
+      ExprRec^.IsNullPtr := ExprRec^.ExprWord.IsNullPtr;
+    end
+    else
+      ExprRec^.IsNullPtr := @ExprRec^.IsNull;
   end;
 end;
 
@@ -1121,6 +1130,7 @@ begin
         if ResetDest then
           Res.Rewind;
 
+        IsNull := False;
         Oper(TempRec);
 
         // goto next
@@ -1137,43 +1147,43 @@ begin
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineIntegerVariable(AVarName: string; AValue: PInteger): TExprWord;
+function TCustomExpressionParser.DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean): TExprWord;
 begin
-  Result := TIntegerVariable.Create(AVarName, AValue);
+  Result := TIntegerVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
 {$ifdef SUPPORT_INT64}
 
-function TCustomExpressionParser.DefineLargeIntVariable(AVarName: string; AValue: PLargeInt): TExprWord;
+function TCustomExpressionParser.DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean): TExprWord;
 begin
-  Result := TLargeIntVariable.Create(AVarName, AValue);
+  Result := TLargeIntVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
 {$endif}
 
-function TCustomExpressionParser.DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec): TExprWord;
+function TCustomExpressionParser.DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean): TExprWord;
 begin
-  Result := TDateTimeVariable.Create(AVarName, AValue);
+  Result := TDateTimeVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineBooleanVariable(AVarName: string; AValue: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean): TExprWord;
 begin
-  Result := TBooleanVariable.Create(AVarName, AValue);
+  Result := TBooleanVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineFloatVariable(AVarName: string; AValue: PDouble): TExprWord;
+function TCustomExpressionParser.DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean): TExprWord;
 begin
-  Result := TFloatVariable.Create(AVarName, AValue);
+  Result := TFloatVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineStringVariable(AVarName: string; AValue: PPAnsiChar): TExprWord; // Was PPChar
+function TCustomExpressionParser.DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean): TExprWord; // Was PPChar
 begin
-  Result := TStringVariable.Create(AVarName, AValue);
+  Result := TStringVariable.Create(AVarName, AValue, AIsNullPtr);
   FWordsList.Add(Result);
 end;
 
@@ -1456,6 +1466,8 @@ var
 begin
   // create in temporary string
   DateTimeToString(TempStr, 'yyyymmdd', PDateTimeRec(Param^.Args[0])^.DateTime);
+  if Param^.ArgList[0]^.IsNullPtr^ then
+    FillChar(PAnsiChar(TempStr)^, Length(TempStr), ' ');
   // copy to buffer
   Param^.Res.Append(PAnsiChar(AnsiString(TempStr)), Length(TempStr)); // Was PChar
 end;
