@@ -135,6 +135,7 @@ following changes thx paulenandrew:
 - add Chr() function to parser
 - add LTrim(), RTrim() and Trim() functions to parser
 - add Asc() function to parser
+- add Right() function to parser
 
 ------------------------
 V6.9.1

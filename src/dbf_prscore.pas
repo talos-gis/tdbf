@@ -2242,6 +2242,21 @@ begin
   Param^.Res.Append(Param^.Args[0], Len);
 end;
 
+procedure FuncRight(Param: PExpressionRec);
+var
+  srcLen, index, count: Integer;
+begin
+  srcLen := dbfStrLen(Param^.Args[0]);
+  count  := PInteger(Param^.Args[1])^;
+  if count > srcLen then
+    count := srcLen;
+  if count > 0 then
+  begin
+    index := srcLen - count;
+    Param^.Res.Append(Param^.Args[0]+index, count);
+  end;
+end;
+
 procedure FuncRTrim(Param: PExpressionRec);
 var
   TempStr: string;
@@ -2447,6 +2462,7 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
+    Add(TFunction.Create('RIGHT',     '',      'SI',  2, etString,   FuncRight,      ''));
     Add(TFunction.Create('RTRIM',     '',      'S',   1, etString,   FuncRTrim,      ''));
     Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString,   FuncSoundex,    ''));
     Add(TFunction.Create('TRIM',      '',      'S',   1, etString,   FuncRTrim,      ''));
