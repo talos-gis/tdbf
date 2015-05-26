@@ -1667,7 +1667,19 @@ begin
   FuncAddSub_CheckNull(Param);
 end;
 
+procedure FuncSub_F_DD(Param: PExpressionRec);
+begin
+  PDouble(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ - PDateTime(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
+
 {$ifdef SUPPORT_INT64}
+
+procedure FuncSub_D_DL(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ - PLargeInt(Param^.Args[1])^;
+  FuncAddSub_CheckNull(Param);
+end;
 
 procedure FuncSub_F_FL(Param: PExpressionRec);
 begin
@@ -2707,13 +2719,24 @@ initialization
     Add(TFunction.CreateOper('-', 'FI', etFloat,    FuncSub_F_FI, 40));
     Add(TFunction.CreateOper('-', 'IF', etFloat,    FuncSub_F_IF, 40));
     Add(TFunction.CreateOper('-', 'II', etInteger,  FuncSub_F_II, 40));
+    Add(TFunction.CreateOper('-', 'DD', etFloat,    FuncSub_F_DD, 40));
 {$ifdef SUPPORT_INT64}
+    Add(TFunction.CreateOper('-', 'DL', etDateTime, FuncSub_D_DL, 40));
     Add(TFunction.CreateOper('-', 'FL', etFloat,    FuncSub_F_FL, 40));
     Add(TFunction.CreateOper('-', 'IL', etLargeInt, FuncSub_F_IL, 40));
     Add(TFunction.CreateOper('-', 'LF', etFloat,    FuncSub_F_LF, 40));
     Add(TFunction.CreateOper('-', 'LL', etLargeInt, FuncSub_F_LI, 40));
     Add(TFunction.CreateOper('-', 'LI', etLargeInt, FuncSub_F_LL, 40));
 {$endif}
+    Add(TFunction.CreateOper('-', 'DS', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'FS', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'IS', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'LS', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'SD', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'SF', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'SI', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'SL', etString,   FuncSub_S,    40));
+    Add(TFunction.CreateOper('-', 'SS', etString,   FuncSub_S,    40));
     Add(TFunction.CreateOper('*', 'FF', etFloat,    FuncMul_F_FF, 40));
     Add(TFunction.CreateOper('*', 'FI', etFloat,    FuncMul_F_FI, 40));
     Add(TFunction.CreateOper('*', 'IF', etFloat,    FuncMul_F_IF, 40));
@@ -2824,9 +2847,9 @@ initialization
 // More functions
     Add(TFunction.Create('ABS',       '',      'I',   1, etInteger,  FuncAbs_I_I,    ''));
     Add(TFunction.Create('ABS',       '',      'F',   1, etFloat,    FuncAbs_F_F,    ''));
-    {$ifdef SUPPORT_INT64}
+{$ifdef SUPPORT_INT64}
     Add(TFunction.Create('ABS',       '',      'L',   1, etFloat,    FuncAbs_F_L,    ''));
-    {$endif}
+{$endif}
     Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
     Add(TFunction.Create('CDOW',      '',      'D',   1, etString,   FuncCDOW,       ''));
     Add(TFunction.Create('CEILING',   'CEIL',  'F',   1, etInteger,  FuncCeil_I_F,   ''));
@@ -2837,17 +2860,17 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,  FuncEmpty,      ''));
-    {$ifdef SUPPORT_INT64}
+{$ifdef SUPPORT_INT64}
     Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,  FuncEmpty,      ''));
-    {$endif}
+{$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('IIF',       '',      'BSS', 3, etString,   FuncIIF_S_SS,   ''));
     Add(TFunction.Create('IIF',       '',      'BFF', 3, etFloat,    FuncIIF_F_FF,   ''));
     Add(TFunction.Create('IIF',       '',      'BII', 3, etInteger,  FuncIIF_I_II,   ''));
     Add(TFunction.Create('LEN',       '',      'S',   1, etInteger,  FuncLen_I_S,    ''));
-    {$ifdef SUPPORT_INT64}
+{$ifdef SUPPORT_INT64}
     Add(TFunction.Create('LEN',       '',      'S',   1, etLargeInt, FuncLen_L_S,    ''));
-    {$endif}
+{$endif}
     Add(TFunction.Create('LEN',       '',      'S',   1, etFloat,    FuncLen_F_S,    ''));
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
