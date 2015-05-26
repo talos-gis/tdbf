@@ -83,27 +83,26 @@ type
     property LastRec: PExpressionRec read FLastRec write FLastRec;
     property ExpResult: PAnsiChar read FExpResult; // Was PChar
     property ExpResultPos: PAnsiChar read FExpResultPos write FExpResultPos; // Was PChar
-    property ExpResultSize: Integer read FExpResultSize;
 
   public
     constructor Create;
     destructor Destroy; override;
 
 //  function DefineFloatVariable(AVarName: string; AValue: PDouble): TExprWord;
-    function DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean): TExprWord;
+    function DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 //  function DefineIntegerVariable(AVarName: string; AValue: PInteger): TExprWord;
-    function DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean): TExprWord;
+    function DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 //  procedure DefineSmallIntVariable(AVarName: string; AValue: PSmallInt);
 {$ifdef SUPPORT_INT64}
 //  function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt): TExprWord;
-    function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean): TExprWord;
+    function DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 {$endif}
 //  function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec): TExprWord;
-    function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean): TExprWord;
+    function DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 //  function DefineBooleanVariable(AVarName: string; AValue: PBoolean): TExprWord;
-    function DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean): TExprWord;
+    function DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 //  function DefineStringVariable(AVarName: string; AValue: PPAnsiChar): TExprWord; // Was PPChar
-    function DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean): TExprWord; // Was PPChar
+    function DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord; // Was PPChar
     function DefineFunction(AFunctName, AShortName, ADescription, ATypeSpec: string;
         AMinFunctionArg: Integer; AResultType: TExpressionType; AFuncAddress: TExprFunc): TExprWord;
     procedure Evaluate(AnExpression: string);
@@ -116,7 +115,7 @@ type
     property ArgSeparator: Char read FArgSeparator write FArgSeparator;
     property Optimize: Boolean read FOptimize write FOptimize;
     property ResultType: TExpressionType read GetResultType;
-
+    property ExpResultSize: Integer read fExpResultSize;
 
     //if optimize is selected, constant expressions are tried to remove
     //such as: 4*4*x is evaluated as 16*x and exp(1)-4*x is repaced by 2.17 -4*x
@@ -1132,12 +1131,15 @@ begin
     repeat
       with TempRec^ do
       begin
-        // do we need to reset pointer?
-        if ResetDest then
-          Res.Rewind;
+        if Assigned(@Oper) then
+        begin
+          // do we need to reset pointer?
+          if ResetDest then
+            Res.Rewind;
 
-        IsNull := False;
-        Oper(TempRec);
+          IsNull := False;
+          Oper(TempRec);
+        end;
 
         // goto next
         TempRec := Next;
@@ -1153,43 +1155,43 @@ begin
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineIntegerVariable(AVarName: string; AValue: PInteger; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 begin
-  Result := TIntegerVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TIntegerVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
 {$ifdef SUPPORT_INT64}
 
-function TCustomExpressionParser.DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineLargeIntVariable(AVarName: string; AValue: PLargeInt; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 begin
-  Result := TLargeIntVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TLargeIntVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
 {$endif}
 
-function TCustomExpressionParser.DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineDateTimeVariable(AVarName: string; AValue: PDateTimeRec; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 begin
-  Result := TDateTimeVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TDateTimeVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineBooleanVariable(AVarName: string; AValue: PBoolean; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 begin
-  Result := TBooleanVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TBooleanVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean): TExprWord;
+function TCustomExpressionParser.DefineFloatVariable(AVarName: string; AValue: PDouble; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord;
 begin
-  Result := TFloatVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TFloatVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
-function TCustomExpressionParser.DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean): TExprWord; // Was PPChar
+function TCustomExpressionParser.DefineStringVariable(AVarName: string; AValue: PPAnsiChar; AIsNullPtr: PBoolean; AFieldInfo: PVariableFieldInfo): TExprWord; // Was PPChar
 begin
-  Result := TStringVariable.Create(AVarName, AValue, AIsNullPtr);
+  Result := TStringVariable.Create(AVarName, AValue, AIsNullPtr, AFieldInfo);
   FWordsList.Add(Result);
 end;
 
@@ -1246,6 +1248,7 @@ begin
   Result^.Next := nil;
   Result^.ExprWord := nil;
   Result^.ResetDest := false;
+  Result^.ExpressionContext := @FExpressionContext;
 end;
 
 procedure TCustomExpressionParser.Evaluate(AnExpression: string);

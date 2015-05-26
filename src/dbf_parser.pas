@@ -391,7 +391,7 @@ type
 
 constructor TRecNoVariable.Create;
 begin
-  inherited Create(EmptyStr, @FRecNo, nil);
+  inherited Create(EmptyStr, @FRecNo, nil, nil);
 end;
 
 procedure TRecNoVariable.Refresh(RecNo: Integer);
