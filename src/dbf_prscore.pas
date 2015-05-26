@@ -2242,6 +2242,23 @@ begin
   end;
 end;
 
+procedure FuncLen_F_S(Param: PExpressionRec);
+begin
+  PDouble(Param^.Res.MemoryPos^)^ := dbfStrLen(Param^.Args[0]);
+end;
+
+{$ifdef SUPPORT_INT64}
+procedure FuncLen_L_S(Param: PExpressionRec);
+begin
+  PLargeInt(Param^.Res.MemoryPos^)^ := dbfStrLen(Param^.Args[0]);
+end;
+{$endif}
+
+procedure FuncLen_I_S(Param: PExpressionRec);
+begin
+  PInteger(Param^.Res.MemoryPos^)^ := dbfStrLen(Param^.Args[0]);
+end;
+
 procedure FuncLTrim(Param: PExpressionRec);
 var
   TempStr: AnsiString;
@@ -2542,6 +2559,11 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,  FuncEmpty,      ''));
     {$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('LEN',       '',      'S',   1, etInteger,  FuncLen_I_S,    ''));
+    {$ifdef SUPPORT_INT64}
+    Add(TFunction.Create('LEN',       '',      'S',   1, etLargeInt, FuncLen_L_S,    ''));
+    {$endif}
+    Add(TFunction.Create('LEN',       '',      'S',   1, etFloat,    FuncLen_F_S,    ''));
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
