@@ -63,6 +63,7 @@ type
     procedure RemoveConstants(var ExprRec: PExpressionRec);
     function ResultCanVary(ExprRec: PExpressionRec): Boolean;
   protected
+    FExpressionContext: TExpressionContext;
     FWordsList: TSortedCollection;
 
     function MakeRec: PExpressionRec; virtual;
@@ -2167,6 +2168,18 @@ begin
   Param^.Res.MemoryPos^^ := AnsiChar(not Boolean(Param^.Args[0]^)); // Was Char
 end;
 
+procedure FuncChr(Param: PExpressionRec);
+var
+  IntValue: Integer;
+begin
+  if Param^.ExpressionContext.Validating then
+    IntValue:= Ord(' ')
+  else
+    IntValue := PInteger(Param^.Args[0])^;
+  if (IntValue >= Low(Byte)) and (IntValue <= High(Byte)) then
+    Param^.Res.Append(@IntValue, SizeOf(Byte));
+end;
+
 procedure FuncEmpty(Param: PExpressionRec);
 begin
   case Param^.ArgsType[0] of
@@ -2391,6 +2404,7 @@ initialization
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString,   FuncLowercase, ''));
 
     // More functions
+    Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,  FuncEmpty,      ''));

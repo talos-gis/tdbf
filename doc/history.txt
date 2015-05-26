@@ -132,6 +132,7 @@ following changes thx paulenandrew:
 - add Empty() function to parser
 - add Proper() function to parser
 - add Val() function to parser
+- add Chr() function to parser
 
 ------------------------
 V6.9.1

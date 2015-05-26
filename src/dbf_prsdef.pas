@@ -56,6 +56,11 @@ type
     property Size: PInteger read FSize;
   end;
 
+  TExpressionContext = record
+    Validating: Boolean;
+  end;
+  PExpressionContext = ^TExpressionContext;
+
   TExpressionRec = record
     //used both as linked tree and linked list for maximum evaluation efficiency
     Oper: TExprFunc;
@@ -72,6 +77,7 @@ type
     ArgList: array[0..MaxArg-1] of PExpressionRec;
     IsNull: Boolean;
     IsNullPtr: PBoolean;
+    ExpressionContext: PExpressionContext;
   end;
 
   TExprCollection = class(TNoOwnerCollection)
