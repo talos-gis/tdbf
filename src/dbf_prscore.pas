@@ -2168,6 +2168,12 @@ begin
   Param^.Res.MemoryPos^^ := AnsiChar(not Boolean(Param^.Args[0]^)); // Was Char
 end;
 
+procedure FuncAsc(Param: PExpressionRec);
+begin
+  if ExprStrLen(Param^.Args[0], False) > 0 then
+    PInteger(Param^.Res.MemoryPos^)^ := Ord(Param^.Args[0]^);
+end;
+
 procedure FuncChr(Param: PExpressionRec);
 var
   IntValue: Integer;
@@ -2430,6 +2436,7 @@ initialization
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString,   FuncLowercase, ''));
 
     // More functions
+    Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
     Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));
