@@ -116,12 +116,15 @@ type
 
 //--Expression functions-----------------------------------------------------
 
+(*
 procedure FuncFloatToStr(Param: PExpressionRec);
 procedure FuncIntToStr_Gen(Param: PExpressionRec; Val: {$ifdef SUPPORT_INT64}Int64{$else}Integer{$endif});
 procedure FuncIntToStr(Param: PExpressionRec);
 {$ifdef SUPPORT_INT64}
 procedure FuncInt64ToStr(Param: PExpressionRec);
 {$endif}
+*)
+procedure FuncStr      (Param: PExpressionRec);
 procedure FuncDateToStr(Param: PExpressionRec);
 procedure FuncSubString(Param: PExpressionRec);
 procedure FuncUppercase(Param: PExpressionRec);
@@ -1292,6 +1295,7 @@ end;
 
 //--Expression functions-----------------------------------------------------
 
+(*
 procedure FuncFloatToStr(Param: PExpressionRec);
 var
   width, numDigits, resWidth: Integer;
@@ -1390,6 +1394,61 @@ begin
 end;
 
 {$endif}
+*)
+
+procedure FuncStr(Param: PExpressionRec);
+var
+  Size: Integer;
+  Precision: Integer;
+  PadChar: Char;
+{$ifdef SUPPORT_INT64}
+  IntValue: Int64;
+{$else}
+  IntValue: Integer;
+{$endif}
+  FloatValue: Extended;
+  Len: Integer;
+begin
+  if Param^.Args[1] <> nil then
+    Size := PInteger(Param^.Args[1])^
+  else
+  begin
+    case Param^.ArgsType[0] of
+      etInteger: Size := 11;
+      etLargeInt: Size := 20;
+    else
+      Size := 10;
+    end;
+  end;
+  if Param^.Args[2] <> nil then
+    Precision := PInteger(Param^.Args[2])^
+  else
+    Precision := 0;
+  if Param^.Args[3] <> nil then
+    PadChar := Param^.Args[0]^
+  else
+    PadChar := #0;
+  if PadChar = #0 then
+    PadChar := ' ';
+  Param^.Res.AssureSpace(Succ(Size));
+  if (Precision = 0) and (Param^.ArgsType[0] in [etInteger, etLargeInt]) then
+  begin
+{$ifdef SUPPORT_INT64}
+    if Param^.ArgsType[0] = etLargeInt then
+      IntValue := PInt64(Param^.Args[0])^
+    else
+{$endif}
+      IntValue := PInteger(Param^.Args[0])^;
+    Len := IntToStrWidth(IntValue, Size, Param^.Res.MemoryPos^, True, PadChar);
+  end
+  else
+  begin
+    FloatValue := PDouble(Param^.Args[0])^;
+    Len := FloatToStrWidth(FloatValue, Size, Precision, Param^.Res.MemoryPos^, True);
+  end;
+  Inc(Param^.Res.MemoryPos^, Len);
+  Param^.Res.MemoryPos^^ := #0;
+end;
 
 procedure FuncDateToStr(Param: PExpressionRec);
 var
@@ -2241,9 +2300,12 @@ initialization
     Add(TFunction.CreateOper('OR',  'BB', etBoolean, Func_OR, 100));
 
     // Functions - name, description, param types, min params, result type, Func addr
-    Add(TFunction.Create('STR',       '',      'FII', 1, etString, FuncFloatToStr, ''));
-    Add(TFunction.Create('STR',       '',      'III', 1, etString, FuncIntToStr, ''));
-    Add(TFunction.Create('STR',       '',      'LII', 1, etString, FuncInt64ToStr, ''));
+//  Add(TFunction.Create('STR',       '',      'FII', 1, etString, FuncFloatToStr, ''));
+//  Add(TFunction.Create('STR',       '',      'III', 1, etString, FuncIntToStr, ''));
+//  Add(TFunction.Create('STR',       '',      'LII', 1, etString, FuncInt64ToStr, ''));
+    Add(TFunction.Create('STR',       '',      'FIIS',1, etString, FuncStr,       ''));
+    Add(TFunction.Create('STR',       '',      'IIIS',1, etString, FuncStr,       ''));
+    Add(TFunction.Create('STR',       '',      'LIIS',1, etString, FuncStr,       ''));
     Add(TFunction.Create('DTOS',      '',      'D',   1, etString, FuncDateToStr, ''));
     Add(TFunction.Create('SUBSTR',    'SUBS',  'SII', 3, etString, FuncSubString, ''));
     Add(TFunction.Create('LEFT',      'LEFT',  'SI',  2, etString, FuncLeftString, ''));

@@ -1122,7 +1122,8 @@ procedure TDynamicType.AppendInteger(Source: Integer);
 begin
   // make room for number
   AssureSpace(12);
-  Inc(FMemoryPos^, GetStrFromInt(Source, FMemoryPos^));
+//Inc(FMemoryPos^, GetStrFromInt(Source, FMemoryPos^));
+  Inc(FMemoryPos^, IntToStrWidth(Source, 11, FMemoryPos^, False, #0));
   FMemoryPos^^ := #0;
 end;
 
