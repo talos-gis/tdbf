@@ -1751,20 +1751,6 @@ end;
 
 {$endif}
 
-{$I dbf_soundex.inc}
-procedure FuncSoundex(Param: PExpressionRec);
-var
-  src: pchar;
-  Dest: string;
-begin
-  with Param^ do
-  begin
-    Src := Args[0];
-    Dest := Soundex(src);
-    res.Append(pchar(Dest), Length(Dest));
-  end;
-end;
-
 procedure FuncStrI_EQ(Param: PExpressionRec);
 begin
   Param^.Res.MemoryPos^^ := AnsiChar(dbfStrIComp(Param^.Args[0], Param^.Args[1]) = 0); // Was Char
@@ -2182,6 +2168,31 @@ begin
   Param^.Res.MemoryPos^^ := AnsiChar(not Boolean(Param^.Args[0]^)); // Was Char
 end;
 
+procedure FuncEmpty(Param: PExpressionRec);
+begin
+  case Param^.ArgsType[0] of
+    etDateTime: PBoolean(Param^.Res.MemoryPos^)^ := PDateTime(Param^.Args[0])^ = 0;
+    etFloat: PBoolean(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[0])^ = 0;
+    etInteger: PBoolean(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[0])^ = 0;
+    etLargeInt: PBoolean(Param^.Res.MemoryPos^)^ := PLargeInt(Param^.Args[0])^ = 0;
+    etString: PBoolean(Param^.Res.MemoryPos^)^ := ExprStrLen(Param^.Args[0], False) = 0;
+  end;
+end;
+
+{$I dbf_soundex.inc}
+procedure FuncSoundex(Param: PExpressionRec);
+var
+  src: pchar;
+  Dest: string;
+begin
+  with Param^ do
+  begin
+    Src := Args[0];
+    Dest := Soundex(src);
+    res.Append(pchar(Dest), Length(Dest));
+  end;
+end;
+
 initialization
 
   DbfWordsGeneralList := TExpressList.Create;
@@ -2327,6 +2338,13 @@ initialization
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString, FuncLowercase, ''));
 
     // More functions
+    Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,FuncEmpty,      ''));
+    Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,FuncEmpty,      ''));
+    {$ifdef SUPPORT_INT64}
+    Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,FuncEmpty,      ''));
+    {$endif}
+    Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,FuncEmpty,      ''));
     Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString, FuncSoundex,    ''));
 end;
 

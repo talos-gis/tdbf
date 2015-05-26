@@ -376,6 +376,7 @@ const
   ('c' in 'a,b') =False}
 
 function ExprCharToExprType(ExprChar: Char): TExpressionType;
+function ExprStrLen(P: PChar; IncludeTrailingSpaces: Boolean): Integer;
 procedure ExprTrailingNulsToSpace(P: PChar; Len: Integer);
 
 implementation
@@ -395,6 +396,16 @@ begin
   else
     Result := etUnknown;
   end;
+end;
+
+function ExprStrLen(P: PChar; IncludeTrailingSpaces: Boolean): Integer;
+begin
+  Result := StrLen(P);
+  if not IncludeTrailingSpaces then
+{$BOOLEVAL OFF}
+    while (Result > 0) and ((P + Pred(Result))^ = ' ') do
+      Dec(Result);
+{$BOOLEVAL ON}
 end;
 
 procedure ExprTrailingNulsToSpace(P: PChar; Len: Integer);

@@ -129,6 +129,7 @@ following changes thx paulenandrew:
 - add concept of null value to parser, use it to implement DTOS(null) = null instead of "18991230"
 - make third parameter optional in SubStr()
 - evaluate operators with equal precedence from left to right
+- add Empty() function to parser
 
 ------------------------
 V6.9.1
