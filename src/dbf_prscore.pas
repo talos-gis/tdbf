@@ -2242,6 +2242,30 @@ begin
   end;
 end;
 
+procedure FuncIIF_S_SS(Param: PExpressionRec);
+begin
+  if PBoolean(Param^.Args[0])^ then
+    Param^.Res.Append(Param^.Args[1], dbfStrLen(Param^.Args[1]))
+  else
+    Param^.Res.Append(Param^.Args[2], dbfStrLen(Param^.Args[2]));
+end;
+
+procedure FuncIIF_F_FF(Param: PExpressionRec);
+begin
+  if PBoolean(Param^.Args[0])^ then
+    PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[1])^
+  else
+    PDouble(Param^.Res.MemoryPos^)^ := PDouble(Param^.Args[2])^;
+end;
+
+procedure FuncIIF_I_II(Param: PExpressionRec);
+begin
+  if PBoolean(Param^.Args[0])^ then
+    PInteger(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[1])^
+  else
+    PInteger(Param^.Res.MemoryPos^)^ := PInteger(Param^.Args[2])^;
+end;
+
 procedure FuncLen_F_S(Param: PExpressionRec);
 begin
   PDouble(Param^.Res.MemoryPos^)^ := dbfStrLen(Param^.Args[0]);
@@ -2559,6 +2583,9 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,  FuncEmpty,      ''));
     {$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
+    Add(TFunction.Create('IIF',       '',      'BSS', 3, etString,   FuncIIF_S_SS,   ''));
+    Add(TFunction.Create('IIF',       '',      'BFF', 3, etFloat,    FuncIIF_F_FF,   ''));
+    Add(TFunction.Create('IIF',       '',      'BII', 3, etInteger,  FuncIIF_I_II,   ''));
     Add(TFunction.Create('LEN',       '',      'S',   1, etInteger,  FuncLen_I_S,    ''));
     {$ifdef SUPPORT_INT64}
     Add(TFunction.Create('LEN',       '',      'S',   1, etLargeInt, FuncLen_L_S,    ''));

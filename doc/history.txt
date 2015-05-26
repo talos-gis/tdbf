@@ -139,6 +139,7 @@ following changes thx paulenandrew:
 - add Abs() function to parser
 - add CDOW(), Day(), Month(), Year() functions to parser
 - add Len() function to parser
+- add IIF() function to parser
 
 ------------------------
 V6.9.1
