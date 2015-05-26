@@ -145,6 +145,7 @@ following changes thx paulenandrew:
 - add RecNo() function to parser
 - make native field information available in parser
 - allow concatenating a string using the + or - binary operator only in an index expression
+- add unary plus (+) operator to parser
 
 ------------------------
 V6.9.1

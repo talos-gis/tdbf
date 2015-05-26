@@ -2457,18 +2457,6 @@ begin
     PInteger(Param^.Res.MemoryPos^)^ := 0;
 end;
 
-procedure FuncNegate(Param: PExpressionRec);
-begin
-  Param^.IsNull := Param^.ArgList[0]^.IsNullPtr^;
-  case Param^.ArgsType[0] of
-    etFloat: PDouble(Param^.Res.MemoryPos^)^ := -PDouble(Param^.Args[0])^;
-    etInteger: PInteger(Param^.Res.MemoryPos^)^ := -PInteger(Param^.Args[0])^;
-{$ifdef SUPPORT_INT64}
-    etLargeInt: PLargeInt(Param^.Res.MemoryPos^)^ := -PLargeInt(Param^.Args[0])^;
-{$endif}
-  end;
-end;
-
 procedure FuncProper(Param: PExpressionRec);
 var
   P: PAnsiChar;
@@ -2732,9 +2720,18 @@ initialization
     Add(TFunction.CreateOper('<>','IL', etBoolean, Func_IL_NEQ, 80));
 {$endif}
 
-    Add(TFunction.CreateOper('NOT', 'B',  etBoolean, Func_NOT, 85));
-    Add(TFunction.CreateOper('AND', 'BB', etBoolean, Func_AND, 90));
-    Add(TFunction.CreateOper('OR',  'BB', etBoolean, Func_OR, 100));
+    Add(TFunction.CreateOper('NOT', 'B',  etBoolean,  Func_NOT,  85));
+    Add(TFunction.CreateOper('AND', 'BB', etBoolean,  Func_AND,  90));
+    Add(TFunction.CreateOper('OR',  'BB', etBoolean,  Func_OR,  100));
+
+    // Unary plus
+    Add(TFunction.CreateOper('+',   'D',  etDateTime, nil,       40));
+    Add(TFunction.CreateOper('+',   'F',  etFloat,    nil,       40));
+    Add(TFunction.CreateOper('+',   'I',  etInteger,  nil,       40));
+    Add(TFunction.CreateOper('+',   'S',  etString,   nil,       40));
+{$ifdef SUPPORT_INT64}
+    Add(TFunction.CreateOper('+',   'L',  etLargeInt, nil,       40));
+{$endif}
 
     // Functions - name, description, param types, min params, result type, Func addr
 //  Add(TFunction.Create('STR',       '',      'FII', 1, etString,   FuncFloatToStr, ''));
@@ -2750,7 +2747,7 @@ initialization
     Add(TFunction.Create('UPPERCASE', 'UPPER', 'S',   1, etString,   FuncUppercase, ''));
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString,   FuncLowercase, ''));
 
-    // More functions
+// More functions
     Add(TFunction.Create('ABS',       '',      'I',   1, etInteger,  FuncAbs_I_I,    ''));
     Add(TFunction.Create('ABS',       '',      'F',   1, etFloat,    FuncAbs_F_F,    ''));
     {$ifdef SUPPORT_INT64}
