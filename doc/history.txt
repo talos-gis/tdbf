@@ -142,6 +142,7 @@ following changes thx paulenandrew:
 - add IIF() function to parser
 - add Ceil(), Ceiling(), Round() functions to parser
 - fix index parser to be case sensitive
+- add RecNo() function to parser
 
 ------------------------
 V6.9.1

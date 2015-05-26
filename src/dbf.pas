@@ -866,7 +866,7 @@ begin
   if Length(Filter) > 0 then
   begin
 {$ifndef VER1_0}
-    Acceptable := Boolean((FParser.ExtractFromBuffer(PAnsiChar(GetCurrentBuffer)))^);
+    Acceptable := Boolean((FParser.ExtractFromBuffer(PAnsiChar(GetCurrentBuffer), PhysicalRecNo))^);
 {$else}
     // strange problem
     // dbf.pas(716,19) Error: Incompatible types: got "CHAR" expected "BOOLEAN"
@@ -3369,7 +3369,7 @@ function TDbf.GotoCommon(SearchKeyType: TSearchKeyType): Boolean;
 var
   Buffer: PAnsiChar;
 begin
-  Buffer := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer);
+  Buffer := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer, PhysicalRecNo);
   Result := SearchKeyBuffer(Buffer, SearchKeyType);
 end;
 
@@ -3553,7 +3553,7 @@ end;
 
 function TDbfMasterLink.GetFieldsVal: PAnsiChar;
 begin
-  Result := FParser.ExtractFromBuffer(@pDbfRecord(TDbf(DataSet).ActiveBuffer)^.DeletedFlag);
+  Result := FParser.ExtractFromBuffer(@pDbfRecord(TDbf(DataSet).ActiveBuffer)^.DeletedFlag, TDbf(DataSet).PhysicalRecNo);
 end;
 
 ////////////////////////////////////////////////////////////////////////////

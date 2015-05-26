@@ -33,9 +33,11 @@ type
     FCaseInsensitive: Boolean;
     FRawStringFields: Boolean;
     FPartialMatch: boolean;
+    FRecNoVariable: TVariable;
 
     function GetDbfFieldDef: TDbfFieldDef;
     function GetResultBufferSize: Integer;
+    procedure SubstituteVariables(var ExprRec: PExpressionRec);
   protected
     FCurrentExpression: string;
 
@@ -51,6 +53,7 @@ type
     procedure SetCaseInsensitive(NewInsensitive: Boolean);
     procedure SetRawStringFields(NewRawFields: Boolean);
     procedure SetPartialMatch(NewPartialMatch: boolean);
+    procedure OptimizeExpr(var ExprRec: PExpressionRec); override;
   public
     constructor Create(ADbfFile: Pointer); virtual;
     destructor Destroy; override;
@@ -58,8 +61,8 @@ type
     procedure ClearExpressions; override;
 
     procedure ParseExpression(AExpression: string); virtual;
-    function ExtractFromBuffer(Buffer: PChar): PAnsiChar; overload; virtual;
-    function ExtractFromBuffer(Buffer: PChar; var IsNull: Boolean): PAnsiChar; overload; virtual;
+    function ExtractFromBuffer(Buffer: PChar; RecNo: Integer): PAnsiChar; overload; virtual;
+    function ExtractFromBuffer(Buffer: PChar; RecNo: Integer; var IsNull: Boolean): PAnsiChar; overload; virtual;
 
     property DbfFile: Pointer read FDbfFile write FDbfFile;
     property Expression: string read FCurrentExpression;
@@ -377,6 +380,26 @@ begin
     FFieldVal := lFieldVal <> 0;
 end;
 
+//--TRecNoVariable-----------------------------------------------------------
+type
+  TRecNoVariable = class(TIntegerVariable)
+  private
+    FRecNo: Integer;
+  public
+    constructor Create; reintroduce;
+    procedure Refresh(RecNo: Integer);
+  end;
+
+constructor TRecNoVariable.Create;
+begin
+  inherited Create(EmptyStr, @FRecNo, nil);
+end;
+
+procedure TRecNoVariable.Refresh(RecNo: Integer);
+begin
+  FRecNo := RecNo;
+end;
+
 //--TDbfParser---------------------------------------------------------------
 
 constructor TDbfParser.Create(ADbfFile: Pointer);
@@ -394,6 +417,7 @@ begin
   ClearExpressions;
   inherited;
   FreeAndNil(FFieldVarList);
+  FreeAndNil(FRecNoVariable);
 end;
 
 function TDbfParser.GetResultType: TExpressionType;
@@ -443,6 +467,12 @@ begin
     FPartialMatch := NewPartialMatch;
     FillExpressList;
   end;
+end;
+
+procedure TDbfParser.OptimizeExpr(var ExprRec: PExpressionRec);
+begin
+  inherited OptimizeExpr(ExprRec);
+  SubstituteVariables(ExprRec);
 end;
 
 procedure TDbfParser.SetRawStringFields(NewRawFields: Boolean);
@@ -609,20 +639,22 @@ begin
   FCurrentExpression := AExpression;
 end;
 
-function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar): PAnsiChar;
+function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar; RecNo: Integer): PAnsiChar;
 var
   IsNull: Boolean;
 begin
-  Result := ExtractFromBuffer(Buffer, IsNull);
+  Result := ExtractFromBuffer(Buffer, RecNo, IsNull);
 end;
 
-function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar; var IsNull: Boolean): PAnsiChar;
+function TDbfParser.ExtractFromBuffer(Buffer: PAnsiChar; RecNo: Integer; var IsNull: Boolean): PAnsiChar;
 var
   I: Integer;
 begin
   // prepare all field variables
   for I := 0 to FFieldVarList.Count - 1 do
     TFieldVar(FFieldVarList.Objects[I]).Refresh(Buffer);
+  if Assigned(FRecNoVariable) then
+    TRecNoVariable(FRecNoVariable).Refresh(RecNo);
 
   // complex expression?
   if FIsExpression then
@@ -663,6 +695,46 @@ begin
     Result:= ResultLen
   else
     Result:= ExpResultSize;
+end;
+
+procedure TDbfParser.SubstituteVariables(var ExprRec: PExpressionRec);
+var
+  Index: Integer;
+  NewExprRec: PExpressionRec;
+  Variable: TVariable;
+begin
+  if @ExprRec.Oper = @FuncRecNo then
+  begin
+    NewExprRec := MakeRec;
+    try
+      if Assigned(FRecNoVariable) then
+        Variable := FRecNoVariable
+      else
+        Variable := TRecNoVariable.Create;
+      try
+        NewExprRec.ExprWord := Variable;
+        NewExprRec.Oper := NewExprRec.ExprWord.ExprFunc;
+        NewExprRec.Args[0] := NewExprRec.ExprWord.AsPointer;
+        CurrentRec := nil;
+        DisposeList(ExprRec);
+        ExprRec := NewExprRec;
+      except
+        if not Assigned(FRecNoVariable) then
+          FreeAndNil(Variable);
+        raise;
+      end;
+      FRecNoVariable:= Variable;
+    except
+      DisposeList(NewExprRec);
+      raise;
+    end;
+  end
+  else
+  begin
+    for Index := 0 to Pred(ExprRec^.ExprWord.MaxFunctionArg) do
+      if ExprRec^.ArgList[Index] <> nil then
+        SubstituteVariables(ExprRec^.ArgList[Index]);
+  end;
 end;
 
 end.

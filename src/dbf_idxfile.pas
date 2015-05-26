@@ -298,12 +298,12 @@ type
     procedure LinkTags;
 
     function  FindKey(AInsert: boolean): Integer;
-    function  InsertKey(Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
-    procedure DeleteKey(Buffer: TDbfRecordBuffer);
+    function  InsertKey(Buffer: TDbfRecordBuffer; RecNo: Integer; AUniqueMode: TIndexUniqueType): Boolean;
+    procedure DeleteKey(Buffer: TDbfRecordBuffer; RecNo: Integer);
     function  InsertCurrent(AUniqueMode: TIndexUniqueType): Boolean;
     function  DeleteCurrent: Boolean;
-    function  UpdateCurrent(PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
-    function  UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
+    function  UpdateCurrent(PrevBuffer, NewBuffer: TDbfRecordBuffer; RecNo: Integer): Boolean;
+    function  UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer; RecNo: Integer): Boolean;
     procedure ReadIndexes;
     procedure Resync(Relative: boolean);
     procedure ResyncRoot;
@@ -364,7 +364,7 @@ type
     function  Insert(RecNo: Integer; Buffer: TDbfRecordBuffer; AUniqueMode: TIndexUniqueType): Boolean;
     function  Update(RecNo: Integer; PrevBuffer, NewBuffer: TDbfRecordBuffer): Boolean;
     procedure Delete(RecNo: Integer; Buffer: TDbfRecordBuffer);
-    function  CheckKeyViolation(Buffer: TDbfRecordBuffer): Boolean;
+    function  CheckKeyViolation(Buffer: TDbfRecordBuffer; RecNo: Integer): Boolean;
     procedure RecordDeleted(RecNo: Integer; Buffer: TDbfRecordBuffer);
     function  RecordRecalled(RecNo: Integer; Buffer: TDbfRecordBuffer): Boolean;
     procedure DeleteIndex(const AIndexName: string);
@@ -381,7 +381,7 @@ type
     procedure CalcRegenerateIndexes;
 
     procedure CreateIndex(FieldDesc, TagName: string; Options: TIndexOptions);
-    function  ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
+    function  ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer; RecNo: Integer): PAnsiChar;
     procedure ExtractKey(Key: PAnsiChar);
     function  CopyCurrentKey(Source, Dest: PAnsiChar): Integer;
     function  SearchKey(Key: PAnsiChar; SearchType: TSearchKeyType): Boolean;
@@ -1791,7 +1791,7 @@ begin
       TDbfFile(DbfFile).InitRecord(TempBuffer);
       FExpressionContext.ValidatingIndex := True;
       try
-        FResultLen := dbfStrLen(ExtractFromBuffer(TempBuffer));
+        FResultLen := dbfStrLen(ExtractFromBuffer(TempBuffer, -1));
       finally
         FExpressionContext.ValidatingIndex := False;
       end;
@@ -2953,7 +2953,7 @@ begin
           Inc(FProgressPosition);
           FillChar(PEntry^, KeyRecLen, 0);
           ADbfFile.ReadRecord(FProgressPosition, ADbfFile.PrevBuffer);
-          FUserKey := ExtractKeyFromBuffer(ADbfFile.PrevBuffer);
+          FUserKey := ExtractKeyFromBuffer(ADbfFile.PrevBuffer, FProgressPosition);
           if Assigned(FUserKey) then
           begin
             PEntry^.RecBlockNo := FProgressPosition;
@@ -3186,14 +3186,14 @@ begin
       while I < count do
       begin
         SelectIndexVars(I);
-        Result := InsertKey(Buffer, AUniqueMode);
+        Result := InsertKey(Buffer, RecNo, AUniqueMode);
         if not Result then
         begin
           while I > 0 do
           begin
             Dec(I);
             SelectIndexVars(I);
-            DeleteKey(Buffer);
+            DeleteKey(Buffer, RecNo);
           end;
           break;
         end;
@@ -3202,7 +3202,7 @@ begin
       // restore previous selected index
       SelectIndexVars(curSel);
     end else begin
-      Result := InsertKey(Buffer, AUniqueMode);
+      Result := InsertKey(Buffer, RecNo, AUniqueMode);
     end;
 
     // check range, disabled by insert
@@ -3212,7 +3212,7 @@ begin
   end;
 end;
 
-function TIndexFile.CheckKeyViolation(Buffer: TDbfRecordBuffer): Boolean;
+function TIndexFile.CheckKeyViolation(Buffer: TDbfRecordBuffer; RecNo: Integer): Boolean;
 var
   I, curSel: Integer;
 begin
@@ -3226,7 +3226,7 @@ begin
       SelectIndexVars(I);
       if FUniqueMode = iuDistinct then
       begin
-        FUserKey := ExtractKeyFromBuffer(Buffer);
+        FUserKey := ExtractKeyFromBuffer(Buffer, RecNo);
         Result := FindKey(false) = 0;
         if Result then
           break;
@@ -3236,7 +3236,7 @@ begin
   end else begin
     if FUniqueMode = iuDistinct then
     begin
-      FUserKey := ExtractKeyFromBuffer(Buffer);
+      FUserKey := ExtractKeyFromBuffer(Buffer, RecNo);
       Result := FindKey(false) = 0;
     end;
   end;
@@ -3376,7 +3376,7 @@ begin
   end;
 end;
 
-function TIndexFile.ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer): PAnsiChar;
+function TIndexFile.ExtractKeyFromBuffer(Buffer: TDbfRecordBuffer; RecNo: Integer): PAnsiChar;
 var
   KeyBuffer: PAnsiChar;
   DbfFieldDef: TDbfFieldDef;
@@ -3394,7 +3394,7 @@ begin
   else
   begin
 //  KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer);
-    KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer, IsNull);
+    KeyBuffer := FCurrentParser.ExtractFromBuffer(Buffer, RecNo, IsNull);
 //  if (KeyType = 'D') and (FCurrentParser.ExtractIsNull(Buffer)) then
     if (KeyType = 'D') and IsNull then
       PDouble(KeyBuffer)^ := 1E100;
@@ -3427,7 +3427,7 @@ begin
     ExprTrailingNulsToSpace(Dest, Result);
 end;
 
-function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}; AUniqueMode: TIndexUniqueType): boolean;
+function TIndexFile.InsertKey(Buffer: {$IFDEF SUPPORT_TRECORDBUFFER}PByte{$ELSE}PAnsiChar{$ENDIF}; RecNo: Integer; AUniqueMode: TIndexUniqueType): boolean;
 begin
   Result := true;
   // ignore deleted records
@@ -3438,7 +3438,7 @@ begin
   if FCanEdit and (PIndexHdr(FIndexHeader)^.KeyLen <> 0) then
   begin
     // get key from buffer
-    FUserKey := ExtractKeyFromBuffer(Buffer);
+    FUserKey := ExtractKeyFromBuffer(Buffer, RecNo);
     // patch through
     Result := InsertCurrent(AUniqueMode);
   end;
@@ -3533,12 +3533,12 @@ begin
       for I := 0 to SwapWordLE(PMdxHdr(Header)^.TagsUsed) - 1 do
       begin
         SelectIndexVars(I);
-        DeleteKey(Buffer);
+        DeleteKey(Buffer, RecNo);
       end;
       // restore previous selected index
       SelectIndexVars(curSel);
     end else begin
-      DeleteKey(Buffer);
+      DeleteKey(Buffer, RecNo);
     end;
     // range may be changed
     ResyncRange(true);
@@ -3547,12 +3547,12 @@ begin
   end;
 end;
 
-procedure TIndexFile.DeleteKey(Buffer: TdbfRecordBuffer);
+procedure TIndexFile.DeleteKey(Buffer: TdbfRecordBuffer; RecNo: Integer);
 begin
   if FCanEdit and (PIndexHdr(FIndexHeader)^.KeyLen <> 0) then
   begin
     // get key from record buffer
-    FUserKey := ExtractKeyFromBuffer(Buffer);
+    FUserKey := ExtractKeyFromBuffer(Buffer, RecNo);
     // call function
     DeleteCurrent;
   end;
@@ -3583,10 +3583,10 @@ begin
   end;
 end;
 
-function TIndexFile.UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TdbfRecordBuffer): Boolean;
+function TIndexFile.UpdateIndex(Index: Integer; PrevBuffer, NewBuffer: TdbfRecordBuffer; RecNo: Integer): Boolean;
 begin
   SelectIndexVars(Index);
-  Result := UpdateCurrent(PrevBuffer, NewBuffer);
+  Result := UpdateCurrent(PrevBuffer, NewBuffer, RecNo);
 end;
 
 function TIndexFile.Update(RecNo: Integer; PrevBuffer, NewBuffer: TdbfRecordBuffer): Boolean;
@@ -3604,14 +3604,14 @@ begin
     count := SwapWordLE(PMdxHdr(Header)^.TagsUsed);
     while I < count do
     begin
-      Result := UpdateIndex(I, PrevBuffer, NewBuffer);
+      Result := UpdateIndex(I, PrevBuffer, NewBuffer, RecNo);
       if not Result then
       begin
         // rollback updates to previous indexes
         while I > 0 do
         begin
           Dec(I);
-          UpdateIndex(I, NewBuffer, PrevBuffer);
+          UpdateIndex(I, NewBuffer, PrevBuffer, RecNo);
         end;
         break;
       end;
@@ -3620,14 +3620,14 @@ begin
     // restore previous selected index
     SelectIndexVars(curSel);
   end else begin
-    Result := UpdateCurrent(PrevBuffer, NewBuffer);
+    Result := UpdateCurrent(PrevBuffer, NewBuffer, RecNo);
   end;
   // check range, disabled by delete/insert
   if (FRoot.LowPage = 0) and (FRoot.HighPage = 0) then
     ResyncRange(true);
 end;
 
-function TIndexFile.UpdateCurrent(PrevBuffer, NewBuffer: TdbfRecordBuffer): boolean;
+function TIndexFile.UpdateCurrent(PrevBuffer, NewBuffer: TdbfRecordBuffer; RecNo: Integer): boolean;
 var
   InsertKey, DeleteKey: PAnsiChar;
   TempBuffer: array [0..MaxIndexKeyLen] of AnsiChar;
@@ -3635,10 +3635,10 @@ begin
   Result := true;
   if FCanEdit and (PIndexHdr(FIndexHeader)^.KeyLen <> 0) then
   begin
-    DeleteKey := ExtractKeyFromBuffer(PrevBuffer);
+    DeleteKey := ExtractKeyFromBuffer(PrevBuffer, RecNo);
     Move(DeleteKey^, TempBuffer, SwapWordLE(PIndexHdr(FIndexHeader)^.KeyLen));
     DeleteKey := @TempBuffer[0];
-    InsertKey := ExtractKeyFromBuffer(NewBuffer);
+    InsertKey := ExtractKeyFromBuffer(NewBuffer, RecNo);
 
     // compare to see if anything changed
     if CompareKeys(DeleteKey, InsertKey) <> 0 then
@@ -3919,7 +3919,7 @@ begin
     // read buffer of this RecNo
     TDbfFile(FDbfFile).ReadRecord(RecNo, TDbfFile(FDbfFile).PrevBuffer);
     // extract key
-    FUserKey := ExtractKeyFromBuffer(TDbfFile(FDbfFile).PrevBuffer);
+    FUserKey := ExtractKeyFromBuffer(TDbfFile(FDbfFile).PrevBuffer, RecNo);
     // find this key
     FUserRecNo := RecNo;
     FindKey(false);

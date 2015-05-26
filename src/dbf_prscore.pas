@@ -77,12 +77,13 @@ type
     procedure DisposeTree(ExprRec: PExpressionRec);
     function CurrentExpression: string; virtual; abstract;
     function GetResultType: TExpressionType; virtual;
-    property ExpResultSize: Integer read fExpResultSize;
+    procedure OptimizeExpr(var ExprRec: PExpressionRec); virtual;
 
     property CurrentRec: PExpressionRec read FCurrentRec write FCurrentRec;
     property LastRec: PExpressionRec read FLastRec write FLastRec;
     property ExpResult: PAnsiChar read FExpResult; // Was PChar
     property ExpResultPos: PAnsiChar read FExpResultPos write FExpResultPos; // Was PChar
+    property ExpResultSize: Integer read FExpResultSize;
 
   public
     constructor Create;
@@ -257,6 +258,7 @@ procedure Func_IL_GTE(Param: PExpressionRec);
 procedure Func_AND(Param: PExpressionRec);
 procedure Func_OR(Param: PExpressionRec);
 procedure Func_NOT(Param: PExpressionRec);
+procedure FuncRecNo(Param: PExpressionRec);
 
 var
   DbfWordsSensGeneralList, DbfWordsInsensGeneralList: TExpressList;
@@ -355,10 +357,12 @@ begin
       ExprTree := MakeTree(ExpColl, 0, ExpColl.Count - 1);
       FCurrentRec := nil;
       CheckArguments(ExprTree);
-      LinkVariables(ExprTree);
+//    LinkVariables(ExprTree);
       if Optimize then
-        RemoveConstants(ExprTree);
+//      RemoveConstants(ExprTree);
+        OptimizeExpr(ExprTree);
       // all constant expressions are evaluated and replaced by variables
+      LinkVariables(ExprTree);
       FCurrentRec := nil;
       FExpResultPos := FExpResult;
       MakeLinkedList(ExprTree, @FExpResult, @FExpResultPos, @FExpResultSize);
@@ -1215,6 +1219,11 @@ begin
     if FLastRec^.ExprWord <> nil then
       Result := FLastRec^.ExprWord.ResultType;
   end;
+end;
+
+procedure TCustomExpressionParser.OptimizeExpr(var ExprRec: PExpressionRec);
+begin
+  RemoveConstants(ExprRec);
 end;
 
 function TCustomExpressionParser.MakeRec: PExpressionRec;
@@ -2359,6 +2368,11 @@ begin
   Param^.Res.Append(Param^.Args[0], Len);
 end;
 
+procedure FuncRecNo(Param: PExpressionRec);
+begin
+  PInteger(Param^.Res.MemoryPos^)^ := -1;
+end;
+
 procedure FuncRight(Param: PExpressionRec);
 var
   srcLen, index, count: Integer;
@@ -2629,6 +2643,7 @@ initialization
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
+    Add(TFunction.Create('RECNO',     '',      '',    0, etInteger,  FuncRecNo,      ''));
     Add(TFunction.Create('RIGHT',     '',      'SI',  2, etString,   FuncRight,      ''));
     Add(TFunction.Create('ROUND',     '',      'FI',  2, etFloat,    FuncRound_F_FI, ''));
     Add(TFunction.Create('ROUND',     '',      'FF',  2, etFloat,    FuncRound_F_FF, ''));
