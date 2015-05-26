@@ -136,6 +136,7 @@ following changes thx paulenandrew:
 - add LTrim(), RTrim() and Trim() functions to parser
 - add Asc() function to parser
 - add Right() function to parser
+- add Abs() function to parser
 
 ------------------------
 V6.9.1

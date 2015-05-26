@@ -2168,6 +2168,23 @@ begin
   Param^.Res.MemoryPos^^ := AnsiChar(not Boolean(Param^.Args[0]^)); // Was Char
 end;
 
+procedure FuncAbs_I_I(Param: PExpressionRec);
+begin
+  PInteger(Param^.Res.MemoryPos^)^ := Abs(PInteger(Param^.Args[0])^);
+end;
+
+procedure FuncAbs_F_F(Param: PExpressionRec);
+begin
+  PDouble(Param^.Res.MemoryPos^)^ := Abs(PDouble(Param^.Args[0])^);
+end;
+
+{$ifdef SUPPORT_INT64}
+procedure FuncAbs_F_L(Param: PExpressionRec);
+begin
+  PDouble(Param^.Res.MemoryPos^)^ := Abs(PLargeInt(Param^.Args[0])^);
+end;
+{$endif}
+
 procedure FuncAsc(Param: PExpressionRec);
 begin
   if ExprStrLen(Param^.Args[0], False) > 0 then
@@ -2451,6 +2468,11 @@ initialization
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString,   FuncLowercase, ''));
 
     // More functions
+    Add(TFunction.Create('ABS',       '',      'I',   1, etInteger,  FuncAbs_I_I,    ''));
+    Add(TFunction.Create('ABS',       '',      'F',   1, etFloat,    FuncAbs_F_F,    ''));
+    {$ifdef SUPPORT_INT64}
+    Add(TFunction.Create('ABS',       '',      'L',   1, etFloat,    FuncAbs_F_L,    ''));
+    {$endif}
     Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
     Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
