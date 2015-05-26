@@ -2201,7 +2201,9 @@ begin
         Buffer[0] := P^;
         P^ := AnsiStrUpper(Buffer)^;
         NewWord := False;
-      end;
+      end
+      else
+        P^ := AnsiStrLower(Buffer)^;
     end;
     Inc(P);
   end;
