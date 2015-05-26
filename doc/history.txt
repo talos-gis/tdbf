@@ -140,6 +140,7 @@ following changes thx paulenandrew:
 - add CDOW(), Date(), Day(), Month(), Year() functions to parser
 - add Len() function to parser
 - add IIF() function to parser
+- add Ceil(), Ceiling(), Round() functions to parser
 
 ------------------------
 V6.9.1

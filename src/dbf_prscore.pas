@@ -27,6 +27,7 @@ uses
   SysUtils,
   Classes,
   Db,
+  Math,
   dbf_Common,
   dbf_prssupp,
   dbf_prsdef;
@@ -2204,6 +2205,16 @@ begin
   Param^.Res.Append(PAnsiChar(TempStr), Length(TempStr));
 end;
 
+procedure FuncCeil_I_F(Param: PExpressionRec);
+begin
+  PInteger(Param^.Res.MemoryPos^)^ := Ceil(PDouble(Param^.Args[0])^);
+end;
+
+procedure FuncCeil_F_F(Param: PExpressionRec);
+begin
+  PDouble(Param^.Res.MemoryPos^)^ := Ceil(PDouble(Param^.Args[0])^);
+end;
+
 procedure FuncChr(Param: PExpressionRec);
 var
   IntValue: Integer;
@@ -2361,6 +2372,22 @@ begin
     index := srcLen - count;
     Param^.Res.Append(Param^.Args[0]+index, count);
   end;
+end;
+
+procedure FuncRound_F_FF(Param: PExpressionRec);
+var
+  TempInt: Integer;
+begin
+  TempInt := Trunc(PDouble(Param^.Args[1])^);
+  PDouble(Param^.Res.MemoryPos^)^ := RoundTo(PDouble(Param^.Args[0])^, -TempInt);
+end;
+
+procedure FuncRound_F_FI(Param: PExpressionRec);
+var
+  TempInt: integer;
+begin
+  TempInt := PInteger(Param^.Args[1])^;
+  PDouble(Param^.Res.MemoryPos^)^ := RoundTo(PDouble(Param^.Args[0])^, -TempInt);
 end;
 
 procedure FuncRTrim(Param: PExpressionRec);
@@ -2579,6 +2606,8 @@ initialization
     {$endif}
     Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
     Add(TFunction.Create('CDOW',      '',      'D',   1, etString,   FuncCDOW,       ''));
+    Add(TFunction.Create('CEILING',   'CEIL',  'F',   1, etInteger,  FuncCeil_I_F,   ''));
+    Add(TFunction.Create('CEILING',   'CEIL',  'F',   1, etFloat,    FuncCeil_F_F,   ''));
     Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
     Add(TFunction.Create('DATE',      '',      '',    0, etDateTime, FuncDate,       ''));
     Add(TFunction.Create('DAY',       '',      'D',   1, etInteger,  FuncDay,        ''));
@@ -2601,6 +2630,8 @@ initialization
     Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
     Add(TFunction.Create('RIGHT',     '',      'SI',  2, etString,   FuncRight,      ''));
+    Add(TFunction.Create('ROUND',     '',      'FI',  2, etFloat,    FuncRound_F_FI, ''));
+    Add(TFunction.Create('ROUND',     '',      'FF',  2, etFloat,    FuncRound_F_FF, ''));
     Add(TFunction.Create('RTRIM',     '',      'S',   1, etString,   FuncRTrim,      ''));
     Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString,   FuncSoundex,    ''));
     Add(TFunction.Create('TRIM',      '',      'S',   1, etString,   FuncRTrim,      ''));
