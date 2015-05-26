@@ -2643,7 +2643,7 @@ initialization
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
     Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
-    Add(TFunction.Create('RECNO',     '',      '',    0, etInteger,  FuncRecNo,      ''));
+    Add(TVaryingFunction.Create('RECNO', '', '',      0, etInteger,  FuncRecNo,      ''));
     Add(TFunction.Create('RIGHT',     '',      'SI',  2, etString,   FuncRight,      ''));
     Add(TFunction.Create('ROUND',     '',      'FI',  2, etFloat,    FuncRound_F_FI, ''));
     Add(TFunction.Create('ROUND',     '',      'FF',  2, etFloat,    FuncRound_F_FF, ''));
