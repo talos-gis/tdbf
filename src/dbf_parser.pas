@@ -52,7 +52,7 @@ type
     procedure SetRawStringFields(NewRawFields: Boolean);
     procedure SetPartialMatch(NewPartialMatch: boolean);
   public
-    constructor Create(ADbfFile: Pointer);
+    constructor Create(ADbfFile: Pointer); virtual;
     destructor Destroy; override;
 
     procedure ClearExpressions; override;
@@ -385,6 +385,7 @@ begin
   FFieldVarList := TStringList.Create;
   FCaseInsensitive := true;
   FRawStringFields := true;
+  FExpressionContext.DbfLangId := TDbfFile(FDbfFile).FileLangId;
   inherited Create;
 end;
 

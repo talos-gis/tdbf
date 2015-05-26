@@ -88,6 +88,7 @@ type
 
     procedure ValidateExpression(AExpression: string); override;
   public
+    constructor Create(ADbfFile: Pointer); override;
     property ResultLen: Integer read FResultLen;
     property KeyType: Char read GetKeyType;
   end;
@@ -1769,6 +1770,12 @@ begin
 end;
 
 { TDbfIndexParser }
+
+constructor TDbfIndexParser.Create(ADbfFile: Pointer);
+begin
+  inherited Create(ADbfFile);
+  CaseInsensitive := False;
+end;
 
 procedure TDbfIndexParser.ValidateExpression(AExpression: string);
 var

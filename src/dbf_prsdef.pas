@@ -58,6 +58,7 @@ type
 
   TExpressionContext = record
     ValidatingIndex: Boolean;
+    DbfLangId: Integer;
   end;
   PExpressionContext = ^TExpressionContext;
 
