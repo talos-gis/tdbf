@@ -326,7 +326,6 @@ end;
 
 procedure TLargeIntFieldVar.Refresh(Buffer: PAnsiChar);
 begin
-  if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
 //if not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, false) then
   FIsNull := not FDbfFile.GetFieldDataFromDef(FieldDef, FieldDef.FieldType, Buffer, @FFieldVal, False);
   if FIsNull then
