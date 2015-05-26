@@ -2191,6 +2191,19 @@ begin
     PInteger(Param^.Res.MemoryPos^)^ := Ord(Param^.Args[0]^);
 end;
 
+procedure FuncCDOW(Param: PExpressionRec);
+var
+  ADate: TDateTime;
+  TempStr: AnsiString;
+begin
+  ADate := PDateTimeRec(Param^.Args[0])^.DateTime;
+  if ADate <> 0 then
+    TempStr := ShortDayNames[DayOfWeek(ADate)]
+  else
+    TempStr := '   ';
+  Param^.Res.Append(PAnsiChar(TempStr), Length(TempStr));
+end;
+
 procedure FuncChr(Param: PExpressionRec);
 var
   IntValue: Integer;
@@ -2201,6 +2214,21 @@ begin
     IntValue := PInteger(Param^.Args[0])^;
   if (IntValue >= Low(Byte)) and (IntValue <= High(Byte)) then
     Param^.Res.Append(@IntValue, SizeOf(Byte));
+end;
+
+procedure FuncDay(Param: PExpressionRec);
+var
+  ADate: TDateTime;
+  Year, Month, Day: Word;
+begin
+  ADate := PDateTimeRec(Param^.Args[0])^.DateTime;
+  if ADate <> 0 then
+  begin
+    DecodeDate(ADate, Year, Month, Day);
+    PInteger(Param^.Res.MemoryPos^)^ := Day;
+  end
+  else
+    PInteger(Param^.Res.MemoryPos^)^ := 0;
 end;
 
 procedure FuncEmpty(Param: PExpressionRec);
@@ -2216,7 +2244,7 @@ end;
 
 procedure FuncLTrim(Param: PExpressionRec);
 var
-  TempStr: string;
+  TempStr: AnsiString;
 begin
   if Param^.ExpressionContext^.ValidatingIndex then
     Param^.Res.Append(Param^.Args[0], dbfStrLen(Param^.Args[0]))
@@ -2227,13 +2255,28 @@ begin
   end;
 end;
 
+procedure FuncMonth(Param: PExpressionRec);
+var
+  ADate: TDateTime;
+  Year, Month, Day: Word;
+begin
+  ADate := PDateTimeRec(Param^.Args[0])^.DateTime;
+  if ADate <> 0 then
+  begin
+    DecodeDate(ADate, Year, Month, Day);
+    PInteger(Param^.Res.MemoryPos^)^ := Month;
+  end
+  else
+    PInteger(Param^.Res.MemoryPos^)^ := 0;
+end;
+
 procedure FuncProper(Param: PExpressionRec);
 var
-  P: PChar;
+  P: PAnsiChar;
   Len: Integer;
   Index: Integer;
   NewWord: Boolean;
-  Buffer: array[0..1] of Char;
+  Buffer: array[0..1] of AnsiChar;
 begin
   P := Param^.Args[0];
   Len := dbfStrLen(P);
@@ -2276,7 +2319,7 @@ end;
 
 procedure FuncRTrim(Param: PExpressionRec);
 var
-  TempStr: string;
+  TempStr: AnsiString;
 begin
   if Param^.ExpressionContext^.ValidatingIndex then
     Param^.Res.Append(Param^.Args[0], dbfStrLen(Param^.Args[0]))
@@ -2290,21 +2333,21 @@ end;
 {$I dbf_soundex.inc}
 procedure FuncSoundex(Param: PExpressionRec);
 var
-  src: pchar;
-  Dest: string;
+  Src: pchar;
+  Dest: AnsiString;
 begin
   with Param^ do
   begin
-    Src := Args[0];
+    Src := Param^.Args[0];
     Dest := Soundex(src);
-    res.Append(pchar(Dest), Length(Dest));
+    Param^.Res.Append(pchar(Dest), Length(Dest));
   end;
 end;
 
 procedure FuncVal(Param: PExpressionRec);
 var
   Index: Integer;
-  TempStr: string;
+  TempStr: AnsiString;
   Code: Integer;
 begin
   TempStr := TrimLeft(Param^.Args[0]);
@@ -2321,6 +2364,21 @@ begin
     etLargeInt: Val(TempStr, PLargeInt(Param^.Res.MemoryPos^)^, Code);
 {$endif}
   end;
+end;
+
+procedure FuncYear(Param: PExpressionRec);
+var
+  ADate: TDateTime;
+  Year, Month, Day: Word;
+begin
+  ADate := PDateTimeRec(Param^.Args[0])^.DateTime;
+  if ADate <> 0 then
+  begin
+    DecodeDate(ADate, Year, Month, Day);
+    PInteger(Param^.Res.MemoryPos^)^ := Year;
+  end
+  else
+    PInteger(Param^.Res.MemoryPos^)^ := 0;
 end;
 
 initialization
@@ -2474,7 +2532,9 @@ initialization
     Add(TFunction.Create('ABS',       '',      'L',   1, etFloat,    FuncAbs_F_L,    ''));
     {$endif}
     Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
+    Add(TFunction.Create('CDOW',      '',      'D',   1, etString,   FuncCDOW,       ''));
     Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
+    Add(TFunction.Create('DAY',       '',      'D',   1, etInteger,  FuncDay,        ''));
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'I',   1, etBoolean,  FuncEmpty,      ''));
@@ -2483,6 +2543,7 @@ initialization
     {$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('LTRIM',     '',      'S',   1, etString,   FuncLTrim,      ''));
+    Add(TFunction.Create('MONTH',     '',      'D',   1, etInteger,  FuncMonth,      ''));
     Add(TFunction.Create('PROPER',    '',      'S',   1, etString,   FuncProper,     ''));
     Add(TFunction.Create('RIGHT',     '',      'SI',  2, etString,   FuncRight,      ''));
     Add(TFunction.Create('RTRIM',     '',      'S',   1, etString,   FuncRTrim,      ''));
@@ -2491,6 +2552,7 @@ initialization
     Add(TFunction.Create('VAL',       '',      'S',   1, etFloat,    FuncVal,        ''));
     Add(TFunction.Create('VAL',       '',      'S',   1, etInteger,  FuncVal,        ''));
     Add(TFunction.Create('VAL',       '',      'S',   1, etLargeInt, FuncVal,       ''));
+    Add(TFunction.Create('YEAR',      '',      'D',   1, etInteger,  FuncYear,       ''));
 end;
 
   with DbfWordsInsensGeneralList do
