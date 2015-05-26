@@ -130,6 +130,7 @@ following changes thx paulenandrew:
 - make third parameter optional in SubStr()
 - evaluate operators with equal precedence from left to right
 - add Empty() function to parser
+- add Proper() function to parser
 
 ------------------------
 V6.9.1

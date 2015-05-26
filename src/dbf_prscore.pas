@@ -2179,6 +2179,36 @@ begin
   end;
 end;
 
+procedure FuncProper(Param: PExpressionRec);
+var
+  P: PChar;
+  Len: Integer;
+  Index: Integer;
+  NewWord: Boolean;
+  Buffer: array[0..1] of Char;
+begin
+  P := Param^.Args[0];
+  Len := StrLen(P);
+  NewWord := True;
+  Buffer[1]:= #0;
+  for Index:= 1 to Len do
+  begin
+    if P^ = ' ' then
+      NewWord := True
+    else
+    begin
+      if NewWord then
+      begin
+        Buffer[0] := P^;
+        P^ := AnsiStrUpper(Buffer)^;
+        NewWord := False;
+      end;
+    end;
+    Inc(P);
+  end;
+  Param^.Res.Append(Param^.Args[0], Len);
+end;
+
 {$I dbf_soundex.inc}
 procedure FuncSoundex(Param: PExpressionRec);
 var
@@ -2345,6 +2375,7 @@ initialization
     Add(TFunction.Create('EMPTY',     '',      'L',   1, etBoolean,FuncEmpty,      ''));
     {$endif}
     Add(TFunction.Create('EMPTY',     '',      'S',   1, etBoolean,FuncEmpty,      ''));
+    Add(TFunction.Create('PROPER',    '',      'S',   1, etString, FuncProper,     ''));
     Add(TFunction.Create('SOUNDEX',   '',      'S',   1, etString, FuncSoundex,    ''));
 end;
 
