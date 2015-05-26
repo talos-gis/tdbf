@@ -2320,6 +2320,7 @@ initialization
     Add(TFunction.Create('STR',       '',      'LIIS',1, etString, FuncStr,       ''));
     Add(TFunction.Create('DTOS',      '',      'D',   1, etString, FuncDateToStr, ''));
     Add(TFunction.Create('SUBSTR',    'SUBS',  'SII', 3, etString, FuncSubString, ''));
+    Add(TFunction.Create('SUBSTR',    'SUBS',  'SI',  2, etString, FuncSubString, ''));
     Add(TFunction.Create('LEFT',      'LEFT',  'SI',  2, etString, FuncLeftString, ''));
     Add(TFunction.Create('UPPERCASE', 'UPPER', 'S',   1, etString, FuncUppercase, ''));
     Add(TFunction.Create('LOWERCASE', 'LOWER', 'S',   1, etString, FuncLowercase, ''));
