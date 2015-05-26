@@ -77,6 +77,7 @@ type
     procedure DisposeTree(ExprRec: PExpressionRec);
     function CurrentExpression: string; virtual; abstract;
     function GetResultType: TExpressionType; virtual;
+    function IsIndex: Boolean; virtual;
     procedure OptimizeExpr(var ExprRec: PExpressionRec); virtual;
 
     property CurrentRec: PExpressionRec read FCurrentRec write FCurrentRec;
@@ -257,7 +258,10 @@ procedure Func_IL_GTE(Param: PExpressionRec);
 procedure Func_AND(Param: PExpressionRec);
 procedure Func_OR(Param: PExpressionRec);
 procedure Func_NOT(Param: PExpressionRec);
+
+procedure FuncAdd_S(Param: PExpressionRec);
 procedure FuncRecNo(Param: PExpressionRec);
+procedure FuncSub_S(Param: PExpressionRec);
 
 var
   DbfWordsSensGeneralList, DbfWordsInsensGeneralList: TExpressList;
@@ -465,6 +469,9 @@ begin
     ExprRec^.Oper := ExprRec^.ExprWord.ExprFunc;
     InternalCheckArguments;
   end;
+
+  if (error = 0) and ((@ExprRec^.Oper = @FuncAdd_S) or (@ExprRec^.Oper = @FuncSub_S)) and (not IsIndex) then
+    error := 2;
 
   // fatal error?
   case error of
@@ -1221,6 +1228,11 @@ begin
     if FLastRec^.ExprWord <> nil then
       Result := FLastRec^.ExprWord.ResultType;
   end;
+end;
+
+function TCustomExpressionParser.IsIndex: Boolean;
+begin
+  Result:= False;
 end;
 
 procedure TCustomExpressionParser.OptimizeExpr(var ExprRec: PExpressionRec);
@@ -2198,6 +2210,113 @@ begin
 end;
 {$endif}
 
+procedure FuncConcatenate_S(Param: PExpressionRec; Pad: Boolean);
+var
+  ArgIndex: Integer;
+  FloatValue: Extended;
+  StringValue: string;
+  Buffer: array[0..19] of Char;
+  Len: Integer;
+  ResSource: PChar;
+  ResLength: Integer;
+  Arg: PChar;
+  ArgType: TExpressionType;
+  ArgIsNull: Boolean;
+  Precision: Integer;
+  Variable: TVariable;
+  FieldInfo: PVariableFieldInfo;
+begin
+  ArgIndex:= 0;
+  while (ArgIndex >= 0) and (ArgIndex < MaxArg) do
+  begin
+    if Assigned(Param^.ArgList[ArgIndex]) then
+    begin
+      ResSource := nil;
+      ResLength := 0;
+      Len := 0;
+      Arg := Param^.Args[ArgIndex];
+      ArgType := Param^.ArgsType[ArgIndex];
+      ArgIsNull := Param^.ArgList[ArgIndex]^.IsNullPtr^;
+      if (not ArgIsNull) or Pad then
+      begin
+        case ArgType of
+          etString:
+          begin
+            ResSource := Arg;
+            ResLength := ExprStrLen(Arg, Pad);
+          end;
+          etFloat:
+          begin
+            ResSource := @Buffer;
+            ResLength := 20;
+            Precision := 4;
+            FloatValue := PDouble(Arg)^;
+            if Param^.ArgList[ArgIndex]^.ExprWord is TVariable then
+            begin
+              Variable := TVariable(Param^.ArgList[ArgIndex]^.ExprWord);
+              FieldInfo := Variable.FieldInfo;
+              if Assigned(FieldInfo) then
+              begin
+                case FieldInfo.NativeFieldType of
+                  'F', 'N':
+                  begin
+                    if ((FieldInfo.Size > 0) and (FieldInfo.Size <= ResLength)) and (FieldInfo.Precision >= 0) then
+                    begin
+                      ResLength := FieldInfo.Size;
+                      Precision := FieldInfo.Precision;
+                    end;
+                  end;
+                end;
+              end;
+            end;
+            if not ArgIsNull then
+              Len := FloatToStrWidth(FloatValue, ResLength, Precision, ResSource, Pad);
+            if not Pad then
+              ResLength := Len;
+          end;
+          etInteger,
+          etLargeInt:
+          begin
+            ResSource := @Buffer;
+            ResLength := 11;
+            if not ArgIsNull then
+              Len:= IntToStrWidth(PInteger(Arg)^, ResLength, ResSource, Pad, ' ');
+            if not Pad then
+              ResLength := Len;
+          end;
+          etDateTime:
+          begin
+            ResLength := 8;
+            if ArgIsNull then
+              ResSource := @Buffer
+            else
+            begin
+              StringValue := FormatDateTime('YYYYMMDD', PDateTime(Arg)^);
+              Len := ResLength;
+              ResSource := pChar(StringValue);
+            end;
+          end;
+        end;
+      end;
+      if Assigned(ResSource) then
+      begin
+        if (ArgType <> etString) and Pad then
+          FillChar(ResSource^, ResLength - Len, ' ');
+        if ResLength <> 0 then
+          Param^.Res.Append(ResSource, ResLength);
+      end;
+      Inc(ArgIndex);
+    end
+    else
+      ArgIndex := -1;
+  end;
+end;
+
+procedure FuncAdd_S(Param: PExpressionRec);
+begin
+  FuncConcatenate_S(Param, True);
+end;
+
 procedure FuncAsc(Param: PExpressionRec);
 begin
   if ExprStrLen(Param^.Args[0], False) > 0 then
@@ -2339,6 +2458,18 @@ begin
     PInteger(Param^.Res.MemoryPos^)^ := 0;
 end;
 
+procedure FuncNegate(Param: PExpressionRec);
+begin
+  Param^.IsNull := Param^.ArgList[0]^.IsNullPtr^;
+  case Param^.ArgsType[0] of
+    etFloat: PDouble(Param^.Res.MemoryPos^)^ := -PDouble(Param^.Args[0])^;
+    etInteger: PInteger(Param^.Res.MemoryPos^)^ := -PInteger(Param^.Args[0])^;
+{$ifdef SUPPORT_INT64}
+    etLargeInt: PLargeInt(Param^.Res.MemoryPos^)^ := -PLargeInt(Param^.Args[0])^;
+{$endif}
+  end;
+end;
+
 procedure FuncProper(Param: PExpressionRec);
 var
   P: PAnsiChar;
@@ -2432,6 +2563,11 @@ begin
     Dest := Soundex(src);
     Param^.Res.Append(pchar(Dest), Length(Dest));
   end;
+end;
+
+procedure FuncSub_S(Param: PExpressionRec);
+begin
+  FuncConcatenate_S(Param, Param^.ExpressionContext^.ValidatingIndex);
 end;
 
 procedure FuncVal(Param: PExpressionRec);

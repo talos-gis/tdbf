@@ -144,6 +144,7 @@ following changes thx paulenandrew:
 - fix index parser to be case sensitive
 - add RecNo() function to parser
 - make native field information available in parser
+- allow concatenating a string using the + or - binary operator only in an index expression
 
 ------------------------
 V6.9.1

@@ -86,6 +86,7 @@ type
   protected
     FResultLen: Integer; 
 
+    function IsIndex: Boolean; override;
     procedure ValidateExpression(AExpression: string); override;
   public
     constructor Create(ADbfFile: Pointer); override;
@@ -1775,6 +1776,11 @@ constructor TDbfIndexParser.Create(ADbfFile: Pointer);
 begin
   inherited Create(ADbfFile);
   CaseInsensitive := False;
+end;
+
+function TDbfIndexParser.IsIndex: Boolean;
+begin
+  Result := True;
 end;
 
 procedure TDbfIndexParser.ValidateExpression(AExpression: string);
