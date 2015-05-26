@@ -957,8 +957,7 @@ begin
   if InterlockedDecrement(TExprWord(Item).FRefCount) = 0 then
   begin
     FShortList.Remove(Item);
-    if TExprWord(Item).FRefCount = 0 then
-      inherited;
+    inherited;
   end;
 end;
 
