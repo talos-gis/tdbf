@@ -726,7 +726,8 @@ begin
   for I := FirstItem to LastItem do
   begin
     ExprWord := TExprWord(Expr.Items[I]);
-    if (brCount = 0) and ExprWord.IsOperator and (TFunction(ExprWord).OperPrec > lPrec) then
+//  if (brCount = 0) and ExprWord.IsOperator and (TFunction(ExprWord).OperPrec > lPrec) then
+    if (brCount = 0) and ExprWord.IsOperator and (TFunction(ExprWord).OperPrec >= lPrec) then
     begin
       IEnd := I;
       lPrec := TFunction(ExprWord).OperPrec;

@@ -128,6 +128,7 @@ following changes thx paulenandrew:
 - add more robust Str() function to parser
 - add concept of null value to parser, use it to implement DTOS(null) = null instead of "18991230"
 - make third parameter optional in SubStr()
+- evaluate operators with equal precedence from left to right
 
 ------------------------
 V6.9.1
