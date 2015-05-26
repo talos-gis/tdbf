@@ -2216,6 +2216,11 @@ begin
     Param^.Res.Append(@IntValue, SizeOf(Byte));
 end;
 
+procedure FuncDate(Param: PExpressionRec);
+begin
+  PDateTime(Param^.Res.MemoryPos^)^ := Now;
+end;
+
 procedure FuncDay(Param: PExpressionRec);
 var
   ADate: TDateTime;
@@ -2575,6 +2580,7 @@ initialization
     Add(TFunction.Create('ASC',       '',      'S',   1, etInteger,  FuncAsc,        ''));
     Add(TFunction.Create('CDOW',      '',      'D',   1, etString,   FuncCDOW,       ''));
     Add(TFunction.Create('CHR',       '',      'I',   1, etString,   FuncChr,        ''));
+    Add(TFunction.Create('DATE',      '',      '',    0, etDateTime, FuncDate,       ''));
     Add(TFunction.Create('DAY',       '',      'D',   1, etInteger,  FuncDay,        ''));
     Add(TFunction.Create('EMPTY',     '',      'D',   1, etBoolean,  FuncEmpty,      ''));
     Add(TFunction.Create('EMPTY',     '',      'F',   1, etBoolean,  FuncEmpty,      ''));

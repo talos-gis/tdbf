@@ -137,7 +137,7 @@ following changes thx paulenandrew:
 - add Asc() function to parser
 - add Right() function to parser
 - add Abs() function to parser
-- add CDOW(), Day(), Month(), Year() functions to parser
+- add CDOW(), Date(), Day(), Month(), Year() functions to parser
 - add Len() function to parser
 - add IIF() function to parser
 
