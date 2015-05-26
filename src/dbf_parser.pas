@@ -408,8 +408,9 @@ begin
   FFieldVarList := TStringList.Create;
   FCaseInsensitive := true;
   FRawStringFields := true;
-  FExpressionContext.DbfLangId := TDbfFile(FDbfFile).FileLangId;
   inherited Create;
+  if Assigned(FDbfFile) then
+    FExpressionContext.DbfLangId := TDbfFile(FDbfFile).FileLangId;
 end;
 
 destructor TDbfParser.Destroy;
