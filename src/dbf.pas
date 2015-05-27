@@ -351,7 +351,7 @@ type
     function CompareBookmarks(Bookmark1, Bookmark2: TBookmark): Integer; override;
     procedure CheckDbfFieldDefs(ADbfFieldDefs: TDbfFieldDefs);
 
-    procedure DataEvent(Event: TDataEvent; Info: Longint); override;
+    procedure DataEvent(Event: TDataEvent; Info: {$ifdef FPC_VERSION}Ptrint{$else}Longint{$endif}); override;
 
     // my own methods and properties
     // most look like ttable functions but they are not tdataset related
@@ -3265,7 +3265,7 @@ begin
   FieldDefs.Update;
 end;
 
-procedure TDbf.DataEvent(Event: TDataEvent; Info: Longint);
+procedure TDbf.DataEvent(Event: TDataEvent; Info: {$ifdef FPC_VERSION}Ptrint{$else}Longint{$endif});
 begin
   if ((Event = deDataSetChange) or (Event = deLayoutChange)) and Assigned(FDbfFile) and (not ControlsDisabled) then
     FDbfFile.ResyncSharedFlushBuffer;
