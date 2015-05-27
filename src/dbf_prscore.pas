@@ -23,7 +23,6 @@ interface
 {$I dbf_common.inc}
 
 uses
-  Windows,
   SysUtils,
   Classes,
   Db,

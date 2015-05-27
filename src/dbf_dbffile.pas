@@ -857,7 +857,7 @@ begin
       if FDbfVersion >= xBaseVII then
       begin
         ReadRecord(I, @lFieldDescVII);
-        lFieldName := AnsiUpper(PAnsiChar(@lFieldDescVII.FieldName[0]));
+        lFieldName := dbfStrUpper(PAnsiChar(@lFieldDescVII.FieldName[0]));
         lSize := lFieldDescVII.FieldSize;
         lPrec := lFieldDescVII.FieldPrecision;
         lNativeFieldType := lFieldDescVII.FieldType;
@@ -866,7 +866,7 @@ begin
           FAutoIncPresent := true;
       end else begin
         ReadRecord(I, @lFieldDescIII);
-        lFieldName := AnsiUpper(PAnsiChar(@lFieldDescIII.FieldName[0]));
+        lFieldName := dbfStrUpper(PAnsiChar(@lFieldDescIII.FieldName[0]));
         lSize := lFieldDescIII.FieldSize;
         lPrec := lFieldDescIII.FieldPrecision;
         lNativeFieldType := lFieldDescIII.FieldType;
@@ -919,7 +919,7 @@ begin
         if FLockUserLen > DbfGlobals.UserNameLen then
           FLockUserLen := DbfGlobals.UserNameLen;
       end else
-      if AnsiUpper(PAnsiChar(lFieldName)) = '_NULLFLAGS' then
+      if dbfStrUpper(PAnsiChar(lFieldName)) = '_NULLFLAGS' then
         FNullField := TempFieldDef;
 
       // goto next field
@@ -1426,7 +1426,7 @@ var
   I: Integer;
   lfi: TDbfFieldDef;
 begin
-  FieldName := AnsiUpper(PAnsiChar(FieldName));
+  FieldName := dbfStrUpper(PAnsiChar(FieldName));
   for I := 0 to FFieldDefs.Count-1 do
   begin
     lfi := TDbfFieldDef(FFieldDefs.Items[I]);
