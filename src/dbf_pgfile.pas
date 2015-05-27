@@ -220,14 +220,22 @@ end;
 {$ifdef SUPPORT_INT64}
 procedure TPagedFileStream.SetSize(NewSize: Longint);
 begin
+{$ifdef FPC_VERSION}
   if not FileTruncate(Handle, NewSize) then
     raise EPagedFile.Create(STRING_WRITE_ERROR);
+{$else}
+  inherited;
+{$endif}
 end;
 {$else}
 procedure TPagedFileStream.SetSize(const NewSize: Int64);
 begin
+{$ifdef FPC_VERSION}
   if not FileTruncate(Handle, NewSize) then
     raise EPagedFile.Create(STRING_WRITE_ERROR);
+{$else}
+  inherited;
+{$endif}
 end;
 {$endif}
 
