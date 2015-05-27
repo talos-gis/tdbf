@@ -1552,6 +1552,7 @@ begin
       end;
     '@':
       begin
+{$ifdef SUPPORT_INT64}
         Result := (PInteger(Src)^ <> 0) and (PInteger(PAnsiChar(Src)+4)^ <> 0);
         if Result and (Dst <> nil) then
         begin
@@ -1562,6 +1563,7 @@ begin
             date := PDateTime(Dst)^;
           SaveDateToDst;
         end;
+{$endif}
       end;
     'T':
       begin
@@ -1824,20 +1826,17 @@ begin
       end;
     '@':
       begin
+{$ifdef SUPPORT_INT64}
         if Src = nil then
         begin
-{$ifdef SUPPORT_INT64}
           PInt64(Dst)^ := 0;
-{$else}          
-          PInteger(Dst)^ := 0;
-          PInteger(PAnsiChar(Dst)+4)^ := 0;
-{$endif}
         end else begin
           LoadDateFromSrc;
           if FDateTimeHandling = dtBDETimeStamp then
             date := DateTimeToBDETimeStamp(date);
           SwapInt64BE(@date, Dst);
         end;
+{$endif}
       end;
     'T':
       begin
@@ -1876,6 +1875,7 @@ begin
       end;
     'B':
       begin
+{$ifdef SUPPORT_INT64}
         if DbfVersion = xFoxPro then
         begin
           if Src = nil then
@@ -1884,6 +1884,7 @@ begin
             SwapInt64LE(Src, Dst);
         end else
           asciiContents := true;
+{$endif}
       end;
     'M':
       begin

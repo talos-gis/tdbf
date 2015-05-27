@@ -944,7 +944,11 @@ begin
   // FNeedLocks => FStream is of type TFileStream
   Failed := false;
   repeat
+{$ifdef SUPPORT_INT64}
     Result := LockFile(TFileStream(FStream).Handle, ULARGE_INTEGER(Offset).LowPart, ULARGE_INTEGER(Offset).HighPart, Length, 0);
+{$else}
+    Result := LockFile(TFileStream(FStream).Handle, Offset, 0, Length, 0);
+{$endif}
     // test if lock violation, then wait a bit and try again
     if not Result and Wait then
     begin
@@ -959,7 +963,11 @@ end;
 function TPagedFile.UnlockSection(const Offset: TPagedFileOffset; const Length: Cardinal): Boolean;
 begin
   if Assigned(FStream) then
+{$ifdef SUPPORT_INT64}
     Result := UnlockFile(TFileStream(FStream).Handle, ULARGE_INTEGER(Offset).LowPart, ULARGE_INTEGER(Offset).HighPart, Length, 0)
+{$else}
+    Result := UnlockFile(TFileStream(FStream).Handle, Offset, 0, Length, 0)
+{$endif}
   else
     Result := True;
 end;

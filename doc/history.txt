@@ -149,6 +149,7 @@ following changes thx paulenandrew:
 - add binary plus (+) operator for strings, dates
 - add binary minus (-) operator for strings, dates
 - fixes so that it compiles in Free Pascal on Linux
+- fixes so that it compiles in compiler that does not support Int64
 
 ------------------------
 V6.9.1
