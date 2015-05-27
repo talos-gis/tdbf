@@ -182,7 +182,9 @@ uses
 {$ifdef KYLIX}
   Libc, 
 {$endif}  
-  Types, dbf_wtil,
+  Types,
+{$else}
+  dbf_wtil,
 {$endif}
   dbf_str;
 
