@@ -2550,11 +2550,11 @@ begin
       if NewWord then
       begin
         Buffer[0] := P^;
-        P^ := AnsiStrUpper(Buffer)^;
+        P^ := dbfStrUpper(Buffer)^;
         NewWord := False;
       end
       else
-        P^ := AnsiStrLower(Buffer)^;
+        P^ := dbfStrLower(Buffer)^;
     end;
     Inc(P);
   end;
