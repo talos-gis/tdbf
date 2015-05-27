@@ -5,6 +5,9 @@ interface
 {$I dbf_common.inc}
 
 uses
+{$ifdef WINDOWS}
+  Windows,
+{$endif}
   SysUtils,
   Classes,
   db,
