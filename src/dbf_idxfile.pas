@@ -3031,13 +3031,13 @@ var
   TempList: pPointerList;
   Size: Integer;
 begin
-  if L<R then
+  if L < R then
   begin
-    Size:= Succ(R-L)*SizeOf(Pointer);
+    Size:= Succ(R-L) * SizeOf(Pointer);
     GetMem(TempList, Size);
     try
       MergeSort2(List, TempList, L, R);
-      MoveMemory(List, TempList, Size);
+      Move(TempList^, List^, Size);
     finally
       FreeMem(TempList);
     end;
@@ -3051,44 +3051,43 @@ var
   L1: Integer;
   R0: Integer;
 begin
-  if L<R then
+  if L < R then
   begin
-    C:= Succ(R-L);
-    M:= L+Pred(C div 2);
+    C:= Succ(R - L);
+    M:= L + Pred(C div 2);
     L1:= M;
     R0:= Succ(M);
     MergeSort2(List, TempList, L, L1);
     MergeSort2(List, TempList, R0, R);
     MergeSort3(List, TempList, L, L1, R0, R);
-    MoveMemory(@List[L], @TempList[L], C*SizeOf(Pointer));
+    Move(TempList[L], List[L], C * SizeOf(Pointer));
   end;
 end;
 
-procedure TIndexFile.MergeSort3(List, TempList: pPointerList;
-  L0, L1, R0, R1: Integer);
+procedure TIndexFile.MergeSort3(List, TempList: pPointerList; L0, L1, R0, R1: Integer);
 var
   I: Integer;
 
   procedure MergeAppend(var J: Integer);
   begin
     MergeSortCheckCancel;
-    TempList[I]:= List[J];
+    TempList[I] := List[J];
     Inc(I);
     Inc(J);
   end;
 
 begin
-  I:= L0;
-  while (L0<=L1) and (R0<=R1) do
+  I := L0;
+  while (L0 <= L1) and (R0 <= R1) do
   begin
-    if MergeSortCompare(List[L0], List[R0])<=0 then
+    if MergeSortCompare(List[L0], List[R0]) <= 0 then
       MergeAppend(L0)
     else
       MergeAppend(R0);
   end;
-  while L0<=L1 do
+  while L0 <= L1 do
     MergeAppend(L0);
-  while R0<=R1 do
+  while R0 <= R1 do
     MergeAppend(R0);
 end;
 
