@@ -926,11 +926,10 @@ end;
 const
 {$ifdef WINDOWS}
   LockOffset = $EFFFFFFE;       // BDE compatible
-  FileLockSize = 2;
 {$else}
-  LockOffset = $7FFFFFFF;
-  FileLockSize = 1;
+  LockOffset = $7FFFFFFE;
 {$endif}
+  FileLockSize = 2;
 
 // dBase supports maximum of a billion records
   LockStart  = LockOffset - 1000000000;
