@@ -2201,7 +2201,6 @@ procedure TIndexFile.ClearIndex;
 //needHeaderLock: Boolean;
 begin
   // flush cache to prevent reading corrupted data
-  WriteVersion(@PIndexHdr(FIndexHeader)^.Version);
   Flush;
   // modifying header: lock page
 //needHeaderLock := FHeaderLocked <> 0;
@@ -2424,7 +2423,6 @@ begin
   PIndexHdr(FIndexHeader)^.FirstNode := 0;
   PIndexHdr(FIndexHeader)^.LastNode := 0;
 {$endif}
-  WriteVersion(@PIndexHdr(FIndexHeader)^.Version);
   WriteHeader;
 
   // update internal properties
@@ -4417,7 +4415,6 @@ begin
       FRangeIndex := -1;
     end;
   end;
-  ReadVersion(@PIndexHdr(FIndexHeader)^.Version);
 end;
 
 procedure TIndexFile.LockIndex;
