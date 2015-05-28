@@ -870,7 +870,7 @@ begin
 {$else}
     // strange problem
     // dbf.pas(716,19) Error: Incompatible types: got "CHAR" expected "BOOLEAN"
-    Acceptable := not ((FParser.ExtractFromBuffer(GetCurrentBuffer))^ = #0);
+    Acceptable := not ((FParser.ExtractFromBuffer(GetCurrentBuffer), PhysicalRecNo)^ = #0);
 {$endif}
   end;
 
@@ -2985,10 +2985,16 @@ begin
   // check if active, test state: if inserting, then -1
   if (FCursor <> nil) and (State <> dsInsert) then
   begin
-    if State = dsCalcFields then
-      pBuffer := TDbfRecordBuffer(CalcBuffer)
+//  if State = dsCalcFields then
+//    pBuffer := TDbfRecordBuffer(CalcBuffer)
+//  else
+//    pBuffer := TDbfRecordBuffer(ActiveBuffer);
+    case State of
+      dsFilter:     pBuffer := TDbfRecordBuffer(FFilterBuffer);
+      dsCalcFields: pBuffer := TDbfRecordBuffer(CalcBuffer);
     else
       pBuffer := TDbfRecordBuffer(ActiveBuffer);
+    end;
     Result := pDbfRecord(pBuffer)^.BookmarkData.PhysicalRecNo;
   end else
     Result := -1;

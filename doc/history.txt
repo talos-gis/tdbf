@@ -150,6 +150,7 @@ following changes thx paulenandrew:
 - add binary minus (-) operator for strings, dates
 - fixes so that it compiles in Free Pascal on Linux
 - fixes so that it compiles in compiler that does not support Int64
+- fix PhysicalRecNo property when filtering
 
 ------------------------
 V6.9.1
