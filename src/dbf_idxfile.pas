@@ -4485,7 +4485,7 @@ end;
 procedure TIndexFile.LinkTags;
 var
   AIndex : Integer;
-  numTags : Word;
+  numTags : Integer;
   ATag : Pointer;
 begin
   if FIndexVersion >= xBaseIV then
