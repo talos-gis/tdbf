@@ -2288,8 +2288,10 @@ begin
   lSaveCursor := nil;
   lIndexFile := nil;
   lSaveIndexFile := FIndexFile;
-  if (FCursor is TIndexCursor) 
+{$BOOLEVAL OFF}
+  if (FCursor is TIndexCursor)
     and (TIndexCursor(FCursor).IndexFile.Expression = KeyFields) then
+{$BOOLEVAL ON}
   begin
     lCursor := FCursor;
   end else begin

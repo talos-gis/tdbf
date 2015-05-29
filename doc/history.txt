@@ -151,6 +151,7 @@ following changes thx paulenandrew:
 - fixes so that it compiles in Free Pascal on Linux
 - fixes so that it compiles in compiler that does not support Int64
 - fix PhysicalRecNo property when filtering
+- prevent Access Violation in TDbf.LocateRecord if no index active and $booleval is on
 
 ------------------------
 V6.9.1
