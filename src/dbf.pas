@@ -271,7 +271,7 @@ type
     procedure InternalInsert; override; {virtual}
 {$endif}
 {$endif}
-    procedure InternalPost; override; {virtual abstract}
+    procedure InternalPost; override; {virtual}
     procedure InternalRefresh; override;
     procedure InternalSetToRecord(Buffer: TDbfRecordBuffer); override; {virtual abstract}
     procedure InitFieldDefs; override;
@@ -1458,11 +1458,13 @@ end;
 {$endif}
 {$endif}
 
-procedure TDbf.InternalPost; {override virtual abstract from TDataset}
+procedure TDbf.InternalPost; {override virtual from TDataset}
 var
   pRecord: pDbfRecord;
   I, newRecord: Integer;
 begin
+  // inherited method checks required fields
+  inherited;
   // if internalpost is called, we know we are active
   pRecord := pDbfRecord(ActiveBuffer);
   // commit blobs
