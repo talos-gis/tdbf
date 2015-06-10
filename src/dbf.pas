@@ -3411,7 +3411,9 @@ end;
 
 procedure TDbf.Post;
 begin
-  inherited Post;
+  // TDataSet.Post raises exception if State = dsSetKey in Free Pascal
+  if State <> dsSetKey then
+    inherited Post;
   if State = dsSetKey then
     PostKeyBuffer(True);
 end;

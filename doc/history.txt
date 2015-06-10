@@ -153,6 +153,7 @@ following changes thx paulenandrew:
 - fix PhysicalRecNo property when filtering
 - prevent Access Violation in TDbf.LocateRecord if no index active and $booleval is on
 - add checking of required fields (call inherited InternalPost)
+- fix exception in TDataSet.Post if State = dsSetKey (Free Pascal)
 
 ------------------------
 V6.9.1
