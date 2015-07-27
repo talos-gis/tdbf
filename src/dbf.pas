@@ -3379,8 +3379,16 @@ function TDbf.GotoCommon(SearchKeyType: TSearchKeyType): Boolean;
 var
   Buffer: PAnsiChar;
 begin
-  Buffer := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer, PhysicalRecNo);
-  Result := SearchKeyBuffer(Buffer, SearchKeyType);
+  if IsEmpty then
+  begin
+    Result := False;
+    CheckBrowseMode;
+  end
+  else
+  begin
+    Buffer := FIndexFile.ExtractKeyFromBuffer(GetCurrentBuffer, PhysicalRecNo);
+    Result := SearchKeyBuffer(Buffer, SearchKeyType);
+  end;
 end;
 
 function TDbf.GotoKey: Boolean;
