@@ -2,6 +2,8 @@ unit dbf;
 
 { design info in dbf_reg.pas }
 
+{$BOOLEVAL OFF}
+
 interface
 
 {$I dbf_common.inc}
@@ -1416,9 +1418,7 @@ end;
 
 function TDbf.LockTable(const Wait: Boolean): Boolean;
 begin
-{$BOOLEVAL OFF}
   if not(Assigned(FDbfFile) and FDbfFile.Active) then
-{$BOOLEVAL ON}
     CheckActive;
   Result := FDbfFile.LockAllPages(Wait);
   UpdateLock;
@@ -2290,10 +2290,8 @@ begin
   lSaveCursor := nil;
   lIndexFile := nil;
   lSaveIndexFile := FIndexFile;
-{$BOOLEVAL OFF}
   if (FCursor is TIndexCursor)
     and (TIndexCursor(FCursor).IndexFile.Expression = KeyFields) then
-{$BOOLEVAL ON}
   begin
     lCursor := FCursor;
   end else begin

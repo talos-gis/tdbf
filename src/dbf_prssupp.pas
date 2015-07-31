@@ -2,6 +2,8 @@ unit dbf_prssupp;
 
 // parse support
 
+{$BOOLEVAL OFF}
+
 {$I dbf_common.inc}
 
 interface
@@ -410,10 +412,8 @@ var
   FloatValue: Extended;
 begin
   P := Src;
-{$BOOLEVAL ON}
   while (P < PChar(Src) + Size) and (P^ = ' ') do
     Inc(P);
-{$BOOLEVAL OFF}
   Dec(Size, P - Src);
   Src := P;
   Result := Size <> 0;

@@ -18,6 +18,8 @@ unit dbf_prscore;
 |
 |---------------------------------------------------------------}
 
+{$BOOLEVAL OFF}
+
 interface
 
 {$I dbf_common.inc}
@@ -2666,10 +2668,8 @@ var
 begin
   TempStr := TrimLeft(Param^.Args[0]);
   Index := 0;
-{$BOOLEVAL OFF}
   while (Index<Length(TempStr)) and (TempStr[Succ(Index)] in [DBF_ZERO..DBF_NINE, DBF_POSITIVESIGN, DBF_NEGATIVESIGN, DBF_DECIMAL]) do
     Inc(Index);
-{$BOOLEVAL ON}
   SetLength(TempStr, Index);
   case Param^.ExprWord.ResultType of
     etFloat: Val(TempStr, PDouble(Param^.Res.MemoryPos^)^, Code);

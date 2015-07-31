@@ -1,5 +1,7 @@
 unit dbf_prsdef;
 
+{$BOOLEVAL OFF}
+
 interface
 
 {$I dbf_common.inc}
@@ -424,10 +426,8 @@ function ExprStrLen(P: PAnsiChar; IncludeTrailingSpaces: Boolean): Integer;
 begin
   Result := StrLen(P);
   if not IncludeTrailingSpaces then
-{$BOOLEVAL OFF}
     while (Result > 0) and ((P + Pred(Result))^ = ' ') do
       Dec(Result);
-{$BOOLEVAL ON}
 end;
 
 procedure ExprTrailingNulsToSpace(P: PAnsiChar; Len: Integer);
