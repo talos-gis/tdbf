@@ -742,6 +742,7 @@ end;
 procedure TDbf.GetBookmarkData(Buffer: TDbfRecordBuffer; Data: Pointer); {override virtual abstract from TDataset}
 begin
   pBookmarkData(Data)^ := pDbfRecord(Buffer)^.BookmarkData;
+  pBookmarkData(Data)^.PhysicalRecNo := SwapIntLE(DWORD(pBookmarkData(Data)^.PhysicalRecNo));
 end;
 
 function TDbf.GetBookmarkFlag(Buffer: TDbfRecordBuffer): TBookmarkFlag; {override virtual abstract from TDataset}
@@ -1086,18 +1087,18 @@ begin
 end;
 
 procedure TDbf.InternalGotoBookmark(ABookmark: Pointer); {override virtual abstract from TDataset}
+var
+  APhysicalRecNo: Integer;
 begin
-  with PBookmarkData(ABookmark)^ do
-  begin
-    if (PhysicalRecNo = 0) then begin
-      First;
-    end else
-    if (PhysicalRecNo = MaxInt) then begin
-      Last;
-    end else begin
-      if FCursor.PhysicalRecNo <> PhysicalRecNo then
-        FCursor.PhysicalRecNo := PhysicalRecNo;
-    end;
+  APhysicalRecNo := Integer(SwapIntLE(DWORD(PBookmarkData(ABookmark)^.PhysicalRecNo)));
+  if (APhysicalRecNo = 0) then begin
+    First;
+  end else
+  if (APhysicalRecNo = MaxInt) then begin
+    Last;
+  end else begin
+    if FCursor.PhysicalRecNo <> APhysicalRecNo then
+      FCursor.PhysicalRecNo := APhysicalRecNo;
   end;
 end;
 

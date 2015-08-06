@@ -154,6 +154,7 @@ following changes thx paulenandrew:
 - prevent Access Violation in TDbf.LocateRecord if no index active and $booleval is on
 - add checking of required fields (call inherited InternalPost)
 - fix exception in TDataSet.Post if State = dsSetKey (Free Pascal)
+- consistently use little endianness for bookmark (allows it to be passed between architectures to support middle-tier)
 
 ------------------------
 V6.9.1
