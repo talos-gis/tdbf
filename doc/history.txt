@@ -48,6 +48,7 @@ following changes thx paulenandrew:
 - fix error handling when operator is missing right-side operand (Range Check Error if + or -, otherwise incorrectly validates)
 - add TDbf.RestructureTable2() method that exposes DeleteFiles to control whether or not to delete the original files
 - add dBASE Reference section to documentation with hard to find information about file locking and key types
+- allow a comma to be used as the decimal separator when reading the value of a numeric field
 
 ------------------------
 V7.0.1

@@ -55,6 +55,7 @@ const
   DBF_POSITIVESIGN = '+';
   DBF_NEGATIVESIGN = '-';
   DBF_DECIMAL = '.';
+  DBF_DECIMAL_ALTERNATE = ',';
   DBF_EXPSIGN = 'E';
   DBF_ZERO = '0';
   DBF_NINE = '9';
@@ -498,9 +499,7 @@ end;
 function StrToFloatWidth(var FloatValue: Extended; const Src: PAnsiChar; const Size: Integer; Default: Extended): Boolean;
 var
   Buffer: array[0..20] of AnsiChar;
-{$ifndef SUPPORT_FORMATSETTINGSTYPE}
   i: Integer;
-{$endif}
 begin
   Result := Size < SizeOf(Buffer);
   if Result then
@@ -508,15 +507,16 @@ begin
     FillChar(Buffer{%H-}, SizeOf(Buffer), 0);
     Move(Src^, Buffer, Size);
     Buffer[Size] := #0;
+    // Normalize decimal separator
+    for i:=0 to Size-1 do
+      if (Buffer[i]=DBF_DECIMAL) or (Buffer[i]=DBF_DECIMAL_ALTERNATE) then
+      begin
+        Buffer[i] := {$ifdef SUPPORT_FORMATSETTINGSTYPE}DBF_DECIMAL{$else}DecimalSeparator{$endif};
+        Break;
+      end;
 {$ifdef SUPPORT_FORMATSETTINGSTYPE}
     Result := dbfTextToFloatFmt(@Buffer, FloatValue, fvExtended, DbfFormatSettings);
 {$else}
-    for i:=0 to Size-1 do
-      if Buffer[i]=DBF_DECIMAL then
-      begin
-        Buffer[i] := DecimalSeparator;
-        Break;
-      end;
     Result := dbfTextToFloat(@Buffer, FloatValue, fvExtended);
 {$endif}
   end;
