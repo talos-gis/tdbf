@@ -49,6 +49,7 @@ following changes thx paulenandrew:
 - add TDbf.RestructureTable2() method that exposes DeleteFiles to control whether or not to delete the original files
 - add dBASE Reference section to documentation with hard to find information about file locking and key types
 - allow a comma to be used as the decimal separator when reading the value of a numeric field
+- allow a comma to be used in the parameter passed to the Val() parser function
 
 ------------------------
 V7.0.1

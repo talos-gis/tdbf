@@ -2735,18 +2735,22 @@ procedure FuncVal(Param: PExpressionRec);
 var
   Index: Integer;
   TempStr: AnsiString;
-  Code: Integer;
+  AExtended: Extended;
 begin
   TempStr := dbfTrimLeft(Param^.Args[0]);
   Index := 0;
-  while (Index<Length(TempStr)) and (TempStr[Succ(Index)] in [DBF_ZERO..DBF_NINE, DBF_POSITIVESIGN, DBF_NEGATIVESIGN, DBF_DECIMAL]) do
+  while (Index<Length(TempStr)) and (TempStr[Succ(Index)] in [DBF_ZERO..DBF_NINE, DBF_POSITIVESIGN, DBF_NEGATIVESIGN, DBF_DECIMAL, DBF_DECIMAL_ALTERNATE]) do
     Inc(Index);
   SetLength(TempStr, Index);
   case Param^.ExprWord.ResultType of
-    etFloat: Val(string(TempStr), PDouble(Param^.Res.MemoryPos^)^, Code);
-    etInteger: Val(string(TempStr), PInteger(Param^.Res.MemoryPos^)^, Code);
+    etFloat:
+    begin
+      StrToFloatWidth(AExtended, PAnsiChar(TempStr), Succ(Length(TempStr)), 0);
+      PDouble(Param^.Res.MemoryPos^)^ := AExtended;
+    end;
+    etInteger: StrToInt32Width(PInteger(Param^.Res.MemoryPos^)^, PAnsiChar(TempStr), Succ(Length(TempStr)), 0);
 {$ifdef SUPPORT_INT64}
-    etLargeInt: Val(string(TempStr), PLargeInt(Param^.Res.MemoryPos^)^, Code);
+    etLargeInt: StrToIntWidth(PLargeInt(Param^.Res.MemoryPos^)^, PAnsiChar(TempStr), Succ(Length(TempStr)), 0);
 {$endif}
   end;
 end;
