@@ -353,7 +353,7 @@ function IntToStrWidth(Val: {$ifdef SUPPORT_INT64}Int64{$else}Integer{$endif}; c
 var
   FloatResult: TFloatResult;
   Negative: Boolean;
-  IntValue: Integer;
+  IntValue: {$ifdef SUPPORT_INT64}Int64{$else}Integer{$endif};
   Buffer: array[0..{$ifdef SUPPORT_INT64}18{$else}9{$endif}] of AnsiChar;
   P: PAnsiChar;
 begin
