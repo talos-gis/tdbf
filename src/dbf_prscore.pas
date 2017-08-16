@@ -1297,12 +1297,14 @@ end;
 function TCustomExpressionParser.CreateConstant(W: string): TConstant;
 var
   DecSep: Integer;
+  AInteger: Integer;
+  Code: Integer;
 begin
   if W[1] = HexChar then
   begin
     // convert hexadecimal to decimal
     W[1] := '$';
-    W := IntToStr(StrToInt(W));
+    W := IntToStr({$ifdef SUPPORT_INT64}StrToInt64{$else}StrToInt{$endif}(W));
   end;
   if (W[1] = '''') or (W[1] = '"') then begin
      // StringConstant will handle any escaped quotes
@@ -1318,7 +1320,15 @@ begin
   {$ENDIF}
       Result := TFloatConstant.Create(W, W)
     end else begin
-      Result := TIntegerConstant.Create(StrToInt(W));
+      {$ifdef SUPPORT_INT64}
+      Val(W, AInteger, Code);
+      if Code=0 then
+        Result := TIntegerConstant.Create(AInteger)
+      else
+        Result := TLargeIntConstant.Create(StrToInt64(W));
+      {$else}
+      Result := TIntegerConstant.Create(StrToInt(W))
+      {$endif}
     end;
   end;
 end;

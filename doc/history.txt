@@ -50,6 +50,7 @@ following changes thx paulenandrew:
 - add dBASE Reference section to documentation with hard to find information about file locking and key types
 - allow a comma to be used as the decimal separator when reading the value of a numeric field
 - allow a comma to be used in the parameter passed to the Val() parser function
+- fix "'...' is not a valid integer value" parsing an expression containing an integer constant that exceeds the range of a 32-bit signed integer (fixes bug #89)
 
 ------------------------
 V7.0.1
