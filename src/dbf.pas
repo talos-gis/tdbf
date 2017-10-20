@@ -256,7 +256,7 @@ type
     function  GetBookmarkFlag(Buffer: TDbfRecordBuffer): TBookmarkFlag; override; {virtual abstract}
     function  GetRecord(Buffer: TDbfRecBuf; GetMode: TGetMode; {%H-}DoCheck: Boolean): TGetResult; override; {virtual abstract}
     function  GetRecordSize: Word; override; {virtual abstract}
-    procedure InternalAddRecord(Buffer: Pointer; {%H-}AAppend: Boolean); override; {virtual abstract}
+    procedure InternalAddRecord(Buffer: TDbfRecordBuffer; {%H-}Append: Boolean); override; {virtual abstract}
     procedure InternalClose; override; {virtual abstract}
     procedure InternalDelete; override; {virtual abstract}
     procedure InternalFirst; override; {virtual abstract}
@@ -993,15 +993,12 @@ begin
   Result := FDbfFile.RecordSize;
 end;
 
-procedure TDbf.InternalAddRecord(Buffer: Pointer; AAppend: Boolean); {override virtual abstract from TDataset}
-  // this function is called from TDataSet.InsertRecord and TDataSet.AppendRecord
-  // goal: add record with Edit...Set Fields...Post all in one step
+procedure TDbf.InternalAddRecord(Buffer: TDbfRecordBuffer; Append: Boolean); {override virtual abstract from TDataset}
 var
   pRecord: pDbfRecord;
   newRecord: integer;
 begin
-  // if InternalAddRecord is called, we know we are active
-  pRecord := Buffer;
+  pRecord := pDbfRecord(Buffer);
 
   // we can not insert records in DBF files, only append
   // ignore Append parameter
