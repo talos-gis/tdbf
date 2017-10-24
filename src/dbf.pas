@@ -2628,7 +2628,7 @@ function TDbf.GetRecNo: Integer; {override virtual}
 var
   pBuffer: pointer;
 begin
-  if FCursor <> nil then
+  if (FCursor <> nil) and (not IsEmpty) then
   begin
     case State of
       dsFilter:     pBuffer := TDbfRecordBuffer(FFilterBuffer);
@@ -3036,7 +3036,7 @@ var
   pBuffer: pointer;
 begin
   // check if active, test state: if inserting, then -1
-  if (FCursor <> nil) and (State <> dsInsert) then
+  if (FCursor <> nil) and (State <> dsInsert) and (not IsEmpty) then
   begin
 //  if State = dsCalcFields then
 //    pBuffer := TDbfRecordBuffer(CalcBuffer)

@@ -52,6 +52,7 @@ following changes thx paulenandrew:
 - allow a comma to be used in the parameter passed to the Val() parser function
 - fix "'...' is not a valid integer value" parsing an expression containing an integer constant that exceeds the range of a 32-bit signed integer (fixes bug #89)
 - fix compatibility with Delphi 2009 and higher (fixes bug #90)
+- fix TDbf.RecNo and TDbf.PhysicalRecNo properties for an empty dataset
 
 ------------------------
 V7.0.1
