@@ -461,7 +461,7 @@ begin
   until (error = 0) or not foundAltFunc;
 
   // maybe it's an undefined variable
-  if (error <> 0) and not ExprRec^.WantsFunction and (firstFuncIndex >= 0) then
+  if (error <> 0) and (not ExprRec^.WantsFunction) and (not ExprRec^.ExprWord.IsOperator) and (firstFuncIndex >= 0) then
   begin
     HandleUnknownVariable(ExprRec^.ExprWord.Name);
     { must not add variable as first function in this set of duplicates,
