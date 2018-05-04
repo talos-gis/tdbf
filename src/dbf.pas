@@ -2116,6 +2116,36 @@ end;
 
 {$ifdef SUPPORT_VARIANTS}
 
+function IsSameVariant(const Value1, Value2: Variant): Boolean;
+var
+  LowBound: Integer;
+  HighBound: Integer;
+  i: Integer;
+begin
+  if VarIsArray(Value1) then begin
+    if not VarIsArray(Value2) then
+      raise EInvalidOp.Create('Cannot compare variant array with non array variant');
+
+    LowBound := VarArrayLowBound(Value1, 1);
+    if LowBound <> VarArrayLowBound(Value2, 1) then
+      raise EInvalidOp.Create('Cannot compare variant arrays with different low bounds');
+
+    HighBound := VarArrayHighBound(Value1, 1);
+    if HighBound <> VarArrayHighBound(Value2, 1) then
+      raise EInvalidOp.Create('Cannot compare variant arrays with different high bounds');
+
+    Result := True;
+    for i := LowBound to HighBound do begin
+      if Value1[i] = Value2[i] then begin
+        Result := False;
+        Exit; //==>
+      end;
+    end;
+  end else begin
+    Result := Value1 = Value2;
+  end;
+end;
+
 function TDbf.Lookup(const KeyFields: string; const KeyValues: Variant;
   const ResultFields: string): Variant;
 var
@@ -2138,8 +2168,8 @@ begin
 {$else}
         CalculateFields(FFilterBuffer);
 {$endif}
-        if KeyValues = FieldValues[KeyFields] then
-           Result := FieldValues[ResultFields];
+        if IsSameVariant(KeyValues, FieldValues[KeyFields]) then
+          Result := FieldValues[ResultFields];
       finally
         RestoreState(saveState);
       end;
