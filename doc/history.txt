@@ -41,7 +41,6 @@ following changes thx paulenandrew:
 - correct conversion of integer value to text if it is outside the 32-bit signed range (introduced in v7.0, fixes bug 85)
 - correct progress information when building an index (Sorting records and Writing records)
 - fix RestructureTable method's handling of incompatible field types
-- retry opening file if there is an error, works around contention with antivirus software
 - fix parser error message "Missing operator between ..."
 - check for extraneous words when parsing an expression that starts with a function
 - fix error handling when operator is missing right-side operand (Range Check Error if + or -, otherwise incorrectly validates)
