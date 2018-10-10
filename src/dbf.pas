@@ -993,7 +993,7 @@ begin
   Result := FDbfFile.RecordSize;
 end;
 
-procedure TDbf.InternalAddRecord(Buffer: {$ifdef SUPPORT_RECORDBUFFER}TDbfRecordBuffer{$else}Pointer{$endif}; Append: Boolean); {override virtual abstract from TDataset}
+procedure TDbf.InternalAddRecord(Buffer: {$ifdef SUPPORT_TRECORDBUFFER}TDbfRecordBuffer{$else}Pointer{$endif}; Append: Boolean); {override virtual abstract from TDataset}
 var
   pRecord: pDbfRecord;
   newRecord: integer;
